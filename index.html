@@ -3,33 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BULL — Ask anything</title>
+<title>Galexer — Ask anything</title>
 <meta name="description" content="A dark AI chat dashboard template with a chat sidebar, prompt box, quick app launcher, and a hover gallery grid.">
-<meta name="theme-color" content="#0B0D10">
+<meta name="theme-color" content="#100A1E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,500;1,500&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0B0D10;
-    --surface:#14171B;
-    --surface-2:#1B1F24;
-    --border:#262B31;
-    --text:#ECEDEE;
-    --muted:#8B9198;
-    --primary:#E8A33D;
-    --primary-ink:#17130B;
-    --ring:rgba(232,163,61,0.45);
+    --bg:#100A1E;
+    --surface:#1B1230;
+    --surface-2:#241A3D;
+    --border:#352A54;
+    --text:#EDEBF5;
+    --muted:#A79ECC;
+    --primary:#A855F7;
+    --primary-ink:#1A0F2E;
+    --ring:rgba(168,85,247,0.45);
     --radius:14px;
     --sidebar-w:264px;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
-    margin:0; background:var(--bg); color:var(--text);
+    margin:0; color:var(--text);
     font-family:'Inter',system-ui,sans-serif; font-size:14px;
     -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(circle at 50% 20%, rgba(168,85,247,0.30), transparent 55%),
+      radial-gradient(circle at 15% 80%, rgba(124,58,237,0.18), transparent 50%),
+      radial-gradient(circle at 85% 70%, rgba(88,28,135,0.22), transparent 55%),
+      var(--bg);
   }
+
+  /* ---------- rising particle field ---------- */
+  .bg-particles{
+    position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none;
+  }
+  .particle{
+    position:absolute; bottom:-40px; border-radius:50%; background:#FFFFFF;
+    opacity:0; box-shadow:0 0 12px 4px rgba(255,255,255,0.65);
+    animation-name:rise; animation-timing-function:linear; animation-iteration-count:infinite;
+  }
+  @keyframes rise{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    8%{ opacity:.85; }
+    85%{ opacity:.55; }
+    100%{ transform:translateY(-110vh) translateX(var(--drift,20px)); opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){ .particle{animation:none; display:none;} }
+  .shell, .topbar, .scrim{ position:relative; z-index:1; }
   button{font-family:inherit; cursor:pointer;}
   a{color:inherit; text-decoration:none;}
   ::selection{background:var(--primary); color:var(--primary-ink);}
@@ -88,7 +111,7 @@
   .user-row{display:flex; align-items:center; gap:9px; min-width:0;}
   .avatar{
     width:28px; height:28px; border-radius:50%; flex-shrink:0;
-    background:linear-gradient(135deg,#E8A33D,#B5651D);
+    background:linear-gradient(135deg,#C084FC,#6D28D9);
   }
   .user-row .name{font-size:12.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .user-row .plan{font-size:11px; color:var(--muted);}
@@ -125,9 +148,9 @@
     padding:90px 20px 40px; text-align:center; position:relative;
   }
   .glow{
-    position:absolute; top:38%; left:50%; width:520px; height:520px;
+    position:absolute; top:38%; left:50%; width:560px; height:560px;
     transform:translate(-50%,-50%); border-radius:50%;
-    background:radial-gradient(circle, rgba(232,163,61,0.16), transparent 70%);
+    background:radial-gradient(circle, rgba(168,85,247,0.28), transparent 70%);
     filter:blur(10px); animation:breathe 6s ease-in-out infinite; pointer-events:none;
   }
   @keyframes breathe{
@@ -249,6 +272,7 @@
 </head>
 <body>
 
+<div class="bg-particles" id="bgParticles" aria-hidden="true"></div>
 <div class="scrim" id="scrim"></div>
 
 <div class="topbar">
@@ -256,10 +280,10 @@
     <button class="icon-btn" id="sidebarToggle" aria-label="Toggle sidebar">
       <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="9" y1="4" x2="9" y2="20"></line></svg>
     </button>
-    <span class="wordmark">BULL</span>
+    <span class="wordmark">Galexer</span>
   </div>
   <div class="top-right">
-    <button class="icon-btn" aria-label="Search chats">
+    <button class="icon-btn" aria-label="Search the web" id="topSearchBtn">
       <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
     </button>
     <button class="icon-btn notif" aria-label="Notifications">
@@ -325,7 +349,7 @@
   <main class="main">
     <section class="hero">
       <div class="glow" aria-hidden="true"></div>
-      <p class="brand-mark">BULL</p>
+      <p class="brand-mark">Galexer</p>
       <h1 class="greeting">Hi, what's on your mind?</h1>
 
       <div class="prompt-box">
@@ -415,6 +439,28 @@
 </div>
 
 <script>
+  // ---- rising particle field ----
+  (function(){
+    const field = document.getElementById('bgParticles');
+    const count = 26;
+    for(let i = 0; i < count; i++){
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 3 + Math.random() * 7;
+      const left = Math.random() * 100;
+      const duration = 14 + Math.random() * 16;
+      const delay = -Math.random() * duration;
+      const drift = (Math.random() * 80 - 40).toFixed(0) + 'px';
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = left + '%';
+      p.style.setProperty('--drift', drift);
+      p.style.animationDuration = duration + 's';
+      p.style.animationDelay = delay + 's';
+      field.appendChild(p);
+    }
+  })();
+
   // ---- sidebar toggle (desktop collapse + mobile drawer) ----
   const sidebar = document.getElementById('sidebar');
   const scrim = document.getElementById('scrim');
@@ -436,18 +482,39 @@
   // ---- prompt box: autosize + enable send on input ----
   const promptInput = document.getElementById('promptInput');
   const sendBtn = document.getElementById('sendBtn');
+  const SEARCH_ENGINE_URL = 'https://duckduckgo.com/?q=';
+
+  function runSearch(){
+    const query = promptInput.value.trim();
+    if(!query) return;
+    window.open(SEARCH_ENGINE_URL + encodeURIComponent(query), '_blank', 'noopener');
+    promptInput.value = '';
+    promptInput.style.height = 'auto';
+    sendBtn.classList.remove('active');
+  }
+
   promptInput.addEventListener('input', () => {
     promptInput.style.height = 'auto';
     promptInput.style.height = Math.min(promptInput.scrollHeight, 160) + 'px';
     sendBtn.classList.toggle('active', promptInput.value.trim().length > 0);
   });
-  sendBtn.addEventListener('click', () => {
-    if(!promptInput.value.trim()) return;
-    // Hook your own submit logic here.
-    console.log('Send:', promptInput.value.trim());
-    promptInput.value = '';
-    promptInput.style.height = 'auto';
-    sendBtn.classList.remove('active');
+  promptInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      runSearch();
+    }
+  });
+  sendBtn.addEventListener('click', runSearch);
+
+  // "Search" chip: focus the box, or run immediately if there's already a query
+  document.querySelectorAll('.chip')[0].addEventListener('click', () => {
+    if(promptInput.value.trim()){ runSearch(); } else { promptInput.focus(); }
+  });
+
+  // Top bar search icon: jump to the prompt box to start a web search
+  document.getElementById('topSearchBtn').addEventListener('click', () => {
+    promptInput.scrollIntoView({behavior:'smooth', block:'center'});
+    promptInput.focus();
   });
 
   // ---- gallery: placeholder tiles (swap thumbGradient for real <img> in production) ----
