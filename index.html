@@ -1,366 +1,292 @@
 <!DOCTYPE html>
-<!-- saved from url=(0052)https://notrealuseroffical2-cloud.github.io/galexer/ -->
-<html lang="en" crxlauncher-bridged="" crxlauncher=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Galexer — Ask anything</title>
-<meta name="description" content="A dark AI chat dashboard template with a chat sidebar, prompt box, quick app launcher, and a hover gallery grid.">
-<meta name="theme-color" content="#100A1E">
-<link rel="preconnect" href="https://fonts.googleapis.com/">
-<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
-<link href="./Galexer — Ask anything_files/css2" rel="stylesheet">
+<title>Galexer — New Tab</title>
+<meta name="description" content="Galexer: a minimal integrated-browser template with tabs, a toolbar, and a DuckDuckGo-powered new-tab page.">
+<meta name="theme-color" content="#0A0A0D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,500;1,500&family=Fira+Code:wght@400;500&family=Playfair+Display:wght@600&family=Bebas+Neue&family=Pacifico&family=Space+Mono:wght@400;700&family=Caveat:wght@600&family=Righteous&family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#100A1E;
-    --surface:#1B1230;
-    --surface-2:#241A3D;
-    --border:#352A54;
+    --bg:#0A0A0D;
+    --surface:#141217;
+    --surface-2:#1C1922;
+    --border:#2C2836;
     --text:#EDEBF5;
-    --muted:#A79ECC;
+    --muted:#9C98AC;
     --primary:#A855F7;
     --primary-ink:#1A0F2E;
     --ring:rgba(168,85,247,0.45);
-    --radius:14px;
-    --sidebar-w:264px;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
-    margin:0; color:var(--text);
+    margin:0; background:var(--bg); color:var(--text);
     font-family:'Inter',system-ui,sans-serif; font-size:14px;
     -webkit-font-smoothing:antialiased;
-    background:
-      radial-gradient(circle at 50% 20%, rgba(168,85,247,0.30), transparent 55%),
-      radial-gradient(circle at 15% 80%, rgba(124,58,237,0.18), transparent 50%),
-      radial-gradient(circle at 85% 70%, rgba(88,28,135,0.22), transparent 55%),
-      var(--bg);
   }
-
-  /* ---------- rising particle field ---------- */
-  .bg-particles{
-    position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none;
-  }
-  .particle{
-    position:absolute; bottom:-40px; border-radius:50%; background:#FFFFFF;
-    opacity:0; box-shadow:0 0 12px 4px rgba(255,255,255,0.65);
-    animation-name:rise; animation-timing-function:linear; animation-iteration-count:infinite;
-  }
-  @keyframes rise{
-    0%{ transform:translateY(0) translateX(0); opacity:0; }
-    8%{ opacity:.85; }
-    85%{ opacity:.55; }
-    100%{ transform:translateY(-110vh) translateX(var(--drift,20px)); opacity:0; }
-  }
-  @media (prefers-reduced-motion: reduce){ .particle{animation:none; display:none;} }
-  .shell, .topbar, .scrim{ position:relative; z-index:1; }
   button{font-family:inherit; cursor:pointer;}
   a{color:inherit; text-decoration:none;}
   ::selection{background:var(--primary); color:var(--primary-ink);}
   a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
     outline:2px solid var(--primary); outline-offset:2px;
   }
-  .icon{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; display:block;}
+  .icon{width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; display:block;}
+
+  /* ---------- rising particle field ---------- */
+  .bg-particles{ position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none; }
+  .particle{
+    position:absolute; bottom:-40px; border-radius:50%; background:#FFFFFF;
+    opacity:0; box-shadow:0 0 12px 4px rgba(255,255,255,0.6);
+    animation-name:rise; animation-timing-function:linear; animation-iteration-count:infinite;
+  }
+  @keyframes rise{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    8%{ opacity:.8; }
+    85%{ opacity:.5; }
+    100%{ transform:translateY(-110vh) translateX(var(--drift,20px)); opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){ .particle{animation:none; display:none;} }
 
   /* ---------- app shell ---------- */
-  .shell{display:flex; height:100vh; overflow:hidden;}
+  .app{ position:relative; z-index:1; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
 
-  /* ---------- sidebar ---------- */
-  .sidebar{
-    width:var(--sidebar-w); flex-shrink:0; display:flex; flex-direction:column;
-    border-right:1px solid var(--border); background:var(--surface);
-    transition:margin-left .25s ease; padding-top:60px;
+  /* ---------- tab strip ---------- */
+  .tabstrip{
+    display:flex; align-items:center; gap:6px; padding:8px 8px 0; flex-shrink:0;
+    overflow-x:auto; scrollbar-width:thin;
   }
-  .sidebar.collapsed{margin-left:calc(-1 * var(--sidebar-w));}
-  .sidebar-inner{display:flex; flex-direction:column; height:100%; padding:14px; gap:14px; min-height:0;}
-  .new-chat{
-    display:flex; align-items:center; gap:8px; justify-content:center;
-    background:var(--primary); color:var(--primary-ink); border:none;
-    border-radius:10px; padding:10px 14px; font-weight:600; font-size:13.5px;
+  .tabstrip::-webkit-scrollbar{height:4px;}
+  .tab{
+    display:flex; align-items:center; gap:8px; width:190px; min-width:120px; flex-shrink:1;
+    padding:9px 10px 9px 14px; border-radius:8px 8px 0 0; cursor:pointer;
+    background:var(--surface); color:var(--muted); border:1px solid var(--border); border-bottom:none;
   }
-  .new-chat:hover{filter:brightness(1.08);}
-  .search-box{
-    display:flex; align-items:center; gap:8px; background:var(--bg);
-    border:1px solid var(--border); border-radius:10px; padding:9px 11px;
+  .tab.active{ background:var(--surface-2); color:var(--primary); border-color:var(--primary); border-top-width:2px; }
+  .tab .tab-title{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:600; }
+  .tab .tab-close{
+    width:16px; height:16px; border-radius:50%; flex-shrink:0; display:flex; align-items:center;
+    justify-content:center; color:inherit; background:transparent;
   }
-  .search-box input{
-    background:transparent; border:none; color:var(--text); width:100%;
-    font-size:13px;
+  .tab .tab-close:hover{ background:rgba(255,255,255,0.12); color:var(--text); }
+  .new-tab-btn{
+    width:34px; height:34px; border-radius:8px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; color:var(--muted);
+    background:var(--surface); border:1px solid var(--border);
   }
-  .search-box input::placeholder{color:var(--muted);}
-  .search-box .icon{color:var(--muted); flex-shrink:0;}
+  .new-tab-btn:hover{ color:var(--text); border-color:#463A5C; }
 
-  .chat-groups{overflow-y:auto; flex:1; margin:0 -14px; padding:0 14px;}
-  .group-label{
-    font-family:'Fira Code',monospace; font-size:10.5px; letter-spacing:.08em;
-    text-transform:uppercase; color:var(--muted); margin:16px 0 6px; padding:0 4px;
+  /* ---------- toolbar ---------- */
+  .toolbar{
+    display:flex; align-items:center; gap:8px; padding:9px 10px; flex-shrink:0;
+    border-bottom:1px solid var(--border);
   }
-  .group-label:first-child{margin-top:0;}
-  .chat-item{
-    display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:9px;
-    color:#C9CCD0; font-size:13px;
+  .tool-btn{
+    width:34px; height:34px; border-radius:8px; flex-shrink:0; display:flex; align-items:center;
+    justify-content:center; color:var(--muted); background:var(--surface); border:1px solid var(--border);
   }
-  .chat-item .icon{color:var(--muted); flex-shrink:0;}
-  .chat-item span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .chat-item:hover{background:var(--surface-2); color:var(--text);}
-  .chat-item.active{background:var(--surface-2); color:var(--text); border:1px solid var(--border);}
+  .tool-btn:hover{ color:var(--text); border-color:#463A5C; }
+  .tool-btn:disabled{ opacity:.4; cursor:default; }
+  .tool-btn:disabled:hover{ color:var(--muted); border-color:var(--border); }
+  .addr-box{
+    flex:1; min-width:0; display:flex; align-items:center; gap:9px; background:var(--surface);
+    border:1px solid var(--border); border-radius:8px; padding:0 14px; height:34px;
+    transition:border-color .15s ease;
+  }
+  .addr-box:focus-within{ border-color:var(--primary); }
+  .addr-box input{ flex:1; min-width:0; background:transparent; border:none; color:var(--text); font-size:13.5px; height:100%; }
+  .addr-box input::placeholder{ color:var(--muted); }
+  .toolbar-spacer{ flex-shrink:0; width:1px; height:20px; background:var(--border); margin:0 2px; }
 
-  .sidebar-footer{
-    display:flex; align-items:center; justify-content:space-between; gap:8px;
-    border-top:1px solid var(--border); padding-top:12px;
-  }
-  .user-row{display:flex; align-items:center; gap:9px; min-width:0;}
-  .avatar{
-    width:28px; height:28px; border-radius:50%; flex-shrink:0;
-    background:linear-gradient(135deg,#C084FC,#6D28D9);
-  }
-  .user-row .name{font-size:12.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .user-row .plan{font-size:11px; color:var(--muted);}
-  .icon-btn{
-    display:flex; align-items:center; justify-content:center; width:32px; height:32px;
-    border-radius:8px; border:1px solid transparent; background:transparent; color:var(--muted);
-    flex-shrink:0;
-  }
-  .icon-btn:hover{background:var(--surface-2); color:var(--text); border-color:var(--border);}
+  /* ---------- view area ---------- */
+  .view-area{ flex:1; min-height:0; position:relative; }
+  .view{ position:absolute; inset:0; overflow-y:auto; }
+  .view iframe{ width:100%; height:100%; border:none; display:block; background:#fff; }
 
-  /* ---------- header ---------- */
-  .topbar{
-    position:fixed; top:0; left:0; right:0; height:60px; z-index:10;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:0 16px; pointer-events:none;
+  .frame-note{
+    position:absolute; left:14px; right:14px; bottom:14px; z-index:5;
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    background:rgba(20,18,23,0.94); border:1px solid var(--border); border-radius:10px;
+    padding:10px 14px; font-size:12px; color:var(--muted); backdrop-filter:blur(6px);
   }
-  .topbar > *{pointer-events:auto;}
-  .top-left{display:flex; align-items:center; gap:10px;}
-  .wordmark{
-    font-family:'Lora',serif; font-style:italic; font-weight:500; font-size:1.15rem;
-    letter-spacing:.01em;
+  .frame-note button{
+    display:flex; align-items:center; gap:6px; background:var(--primary); color:var(--primary-ink);
+    border:none; border-radius:999px; padding:6px 12px; font-size:11.5px; font-weight:600; flex-shrink:0;
   }
-  .top-right{display:flex; align-items:center; gap:6px;}
-  .icon-btn.notif{position:relative;}
-  .icon-btn.notif::after{
-    content:""; position:absolute; top:6px; right:6px; width:6px; height:6px;
-    border-radius:50%; background:var(--primary); border:1.5px solid var(--surface);
-  }
+  .frame-note button:hover{ filter:brightness(1.08); }
 
-  /* ---------- main ---------- */
-  .main{flex:1; min-width:0; display:flex; flex-direction:column; overflow-y:auto;}
+  /* ---------- home (new tab) page ---------- */
   .hero{
-    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:90px 20px 40px; text-align:center; position:relative;
+    min-height:100%; display:flex; flex-direction:column; align-items:center;
+    padding:16vh 20px 40px; text-align:center;
   }
-  .glow{
-    position:absolute; top:38%; left:50%; width:560px; height:560px;
-    transform:translate(-50%,-50%); border-radius:50%;
-    background:radial-gradient(circle, rgba(168,85,247,0.28), transparent 70%);
-    filter:blur(10px); animation:breathe 6s ease-in-out infinite; pointer-events:none;
-  }
-  @keyframes breathe{
-    0%,100%{opacity:.7; transform:translate(-50%,-50%) scale(1);}
-    50%{opacity:1; transform:translate(-50%,-50%) scale(1.08);}
-  }
-  @media (prefers-reduced-motion: reduce){ .glow{animation:none;} }
-
   .brand-mark{
-    font-family:'Lora',serif; font-style:italic; font-size:2.1rem; margin:0 0 6px;
-    position:relative;
+    font-family:'Inter',sans-serif; font-weight:700; font-size:2.6rem; letter-spacing:.18em;
+    margin:0 0 30px; color:var(--primary); text-transform:uppercase;
   }
-  .greeting{
-    font-size:1.5rem; font-weight:500; margin:0 0 26px; position:relative;
-    color:#F2F3F4;
+  .search-box{
+    width:100%; max-width:460px; display:flex; align-items:center; gap:10px;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:13px 16px; transition:border-color .15s ease;
   }
+  .search-box:focus-within{ border-color:var(--primary); box-shadow:0 0 0 3px var(--ring); }
+  .search-box .icon{ color:var(--primary); flex-shrink:0; }
+  .search-box input{ flex:1; background:transparent; border:none; color:var(--text); font-size:14px; }
+  .search-box input::placeholder{ color:var(--muted); }
 
-  .prompt-box{
-    width:100%; max-width:640px; background:var(--surface); border:1px solid var(--border);
-    border-radius:22px; padding:8px; box-shadow:0 20px 50px -20px rgba(0,0,0,0.6);
-    position:relative; transition:border-color .2s ease;
+  .launcher{ margin-top:30px; }
+  .launcher-grid{ display:flex; flex-wrap:wrap; justify-content:center; gap:30px; }
+  .launch-tile{
+    display:flex; flex-direction:column; align-items:center; gap:8px; background:none; border:none; color:inherit;
   }
-  .prompt-box:focus-within{border-color:rgba(232,163,61,0.55);}
-  .prompt-box textarea{
-    width:100%; background:transparent; border:none; color:var(--text); resize:none;
-    font-family:inherit; font-size:14.5px; line-height:1.5; padding:10px 10px 4px;
-    max-height:160px; min-height:24px;
-  }
-  .prompt-box textarea::placeholder{color:var(--muted);}
-  .prompt-row{display:flex; align-items:center; justify-content:space-between; padding:2px 4px 2px 8px;}
-  .add-btn{
-    width:34px; height:34px; border-radius:50%; border:1px solid var(--border);
-    background:var(--surface-2); color:var(--text); display:flex; align-items:center; justify-content:center;
-  }
-  .add-btn:hover{background:#242A31;}
-  .send-btn{
-    width:34px; height:34px; border-radius:50%; border:none; background:var(--primary);
-    color:var(--primary-ink); display:flex; align-items:center; justify-content:center;
-    opacity:.45; transition:opacity .15s ease;
-  }
-  .send-btn.active{opacity:1;}
-  .send-btn:hover.active{filter:brightness(1.08);}
+  .launch-tile .tile-icon{ color:var(--muted); }
+  .launch-tile .tile-icon svg{ width:26px; height:26px; }
+  .launch-tile:hover .tile-icon{ color:var(--text); }
+  .launch-tile .tile-label{ font-size:11.5px; font-weight:600; color:var(--muted); }
+  .launch-tile:hover .tile-label{ color:var(--text); }
 
-  .chips{display:flex; flex-wrap:wrap; gap:9px; justify-content:center; margin-top:22px; max-width:640px; position:relative;}
-  .chip{
-    display:flex; align-items:center; gap:7px; padding:8px 14px; border-radius:999px;
-    border:1px solid var(--border); background:var(--surface); color:#C9CCD0; font-size:13px;
+  /* ---------- signature: growing line + rotating-font credit ---------- */
+  .signature{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:56px; }
+  .sig-line-wrap{ width:200px; max-width:60%; }
+  .sig-line{
+    display:block; width:100%; height:2px; border-radius:2px;
+    background:linear-gradient(90deg, transparent, var(--primary), transparent);
+    transform-origin:left center; transform:scaleX(0);
+    animation:sigLineGrow 10s ease-in-out infinite;
   }
-  .chip .icon{color:var(--primary); width:15px; height:15px;}
-  .chip:hover{background:var(--surface-2); color:var(--text); border-color:#33393F;}
+  .sig-text{
+    margin:0; font-size:1rem; letter-spacing:.02em; color:var(--muted);
+    opacity:0; animation:sigTextFade 10s ease-in-out infinite;
+  }
+  @keyframes sigLineGrow{
+    0%{ transform:scaleX(0); } 8%{ transform:scaleX(1); }
+    45%{ transform:scaleX(1); } 51%{ transform:scaleX(0); } 100%{ transform:scaleX(0); }
+  }
+  @keyframes sigTextFade{
+    0%{ opacity:0; } 8%{ opacity:0; } 12%{ opacity:1; }
+    42%{ opacity:1; } 45%{ opacity:0; } 100%{ opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){ .sig-line, .sig-text{ animation:none; transform:scaleX(1); opacity:1; } }
 
-  /* ---------- launcher row ---------- */
-  .launcher{padding:36px 20px 8px; max-width:900px; margin:0 auto; width:100%;}
-  .launcher-grid{
-    display:grid; grid-template-columns:repeat(4,1fr); gap:16px 12px;
+  /* ---------- floating action button ---------- */
+  .fab{
+    position:fixed; left:20px; bottom:20px; z-index:6; width:48px; height:48px; border-radius:50%;
+    background:var(--surface); border:2px solid var(--primary); color:var(--primary);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px -8px rgba(0,0,0,0.6);
   }
-  @media(min-width:560px){ .launcher-grid{grid-template-columns:repeat(8,1fr);} }
-  .launch-tile{display:flex; flex-direction:column; align-items:center; gap:7px;}
-  .launch-tile .tile-icon{
-    width:44px; height:44px; border-radius:13px; background:var(--surface);
-    border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
-    color:#C9CCD0;
-  }
-  .launch-tile:hover .tile-icon{background:var(--surface-2); color:var(--text); border-color:#33393F;}
-  .launch-tile .tile-label{font-size:11px; color:var(--muted); text-align:center;}
+  .fab:hover{ background:var(--surface-2); }
+  .fab .icon{ width:20px; height:20px; }
 
-  /* ---------- gallery ---------- */
-  .gallery-section{max-width:1100px; margin:0 auto; width:100%; padding:44px 20px 60px;}
-  .gallery-head{
-    display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px;
-  }
-  .gallery-head h2{font-size:1.05rem; font-weight:600; margin:0;}
-  .gallery-head .refresh{
-    display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted);
-    background:none; border:none;
-  }
-  .gallery-head .refresh:hover{color:var(--text);}
-  .gallery-grid{
-    display:grid; grid-template-columns:repeat(2,1fr); gap:14px;
-  }
-  @media(min-width:640px){ .gallery-grid{grid-template-columns:repeat(3,1fr);} }
-  @media(min-width:900px){ .gallery-grid{grid-template-columns:repeat(4,1fr);} }
-  .tile{
-    border:1px solid var(--border); border-radius:16px; overflow:hidden; background:var(--surface);
-  }
-  .tile-thumb{
-    aspect-ratio:1/1; position:relative; overflow:hidden;
-  }
-  .tile-thumb .badge{
-    position:absolute; top:8px; left:8px; z-index:2; font-size:10.5px; padding:3px 8px;
-    border-radius:6px; background:rgba(11,13,16,0.65); border:1px solid rgba(255,255,255,0.08);
-    color:#E5E6E7; backdrop-filter:blur(3px);
-  }
-  .tile-thumb .overlay{
-    position:absolute; inset:0; background:rgba(11,13,16,0.4); opacity:0; transition:opacity .2s ease;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-  }
-  .tile:hover .overlay{opacity:1;}
-  .tile-thumb .overlay button{
-    width:32px; height:32px; border-radius:50%; border:none; background:rgba(20,23,27,0.9);
-    color:var(--text); display:flex; align-items:center; justify-content:center;
-  }
-  .tile-thumb .overlay button:hover{background:var(--primary); color:var(--primary-ink);}
-  .tile-caption{padding:10px 12px 12px; font-size:12.5px; font-weight:500; color:#D6D8DA;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
-
-  /* mobile: overlay sidebar as drawer */
-  .scrim{
-    position:fixed; inset:0; background:rgba(0,0,0,0.5); opacity:0; pointer-events:none;
-    transition:opacity .2s ease; z-index:20;
-  }
-  .scrim.show{opacity:1; pointer-events:auto;}
-  @media (max-width:860px){
-    .sidebar{position:fixed; top:0; left:0; bottom:0; z-index:30; margin-left:calc(-1 * var(--sidebar-w));}
-    .sidebar.open{margin-left:0;}
-    .sidebar.collapsed{margin-left:calc(-1 * var(--sidebar-w));}
+  @media (max-width:640px){
+    .tab{ width:130px; }
+    .brand-mark{ font-size:1.9rem; letter-spacing:.1em; }
+    .launcher-grid{ gap:20px 22px; }
   }
 </style>
-<style></style></head>
+</head>
 <body>
 
-<div class="bg-particles" id="bgParticles" aria-hidden="true"><div class="particle" style="width: 8.04813px; height: 8.04813px; left: 2.76791%; --drift: 37px; animation-duration: 27.3188s; animation-delay: -2.56136s;"></div><div class="particle" style="width: 3.82564px; height: 3.82564px; left: 68.0641%; --drift: -39px; animation-duration: 29.4648s; animation-delay: -13.9819s;"></div><div class="particle" style="width: 7.14852px; height: 7.14852px; left: 59.612%; --drift: -30px; animation-duration: 27.458s; animation-delay: -6.16242s;"></div><div class="particle" style="width: 4.3px; height: 4.3px; left: 97.3899%; --drift: 39px; animation-duration: 19.8625s; animation-delay: -17.0578s;"></div><div class="particle" style="width: 8.83144px; height: 8.83144px; left: 7.50134%; --drift: -5px; animation-duration: 26.4125s; animation-delay: -18.9147s;"></div><div class="particle" style="width: 3.57761px; height: 3.57761px; left: 2.84237%; --drift: -38px; animation-duration: 21.278s; animation-delay: -20.0456s;"></div><div class="particle" style="width: 6.59609px; height: 6.59609px; left: 92.4494%; --drift: 38px; animation-duration: 27.3494s; animation-delay: -23.8488s;"></div><div class="particle" style="width: 7.58085px; height: 7.58085px; left: 91.2393%; --drift: -9px; animation-duration: 26.782s; animation-delay: -9.71375s;"></div><div class="particle" style="width: 9.02613px; height: 9.02613px; left: 98.0212%; --drift: -4px; animation-duration: 23.9615s; animation-delay: -3.46189s;"></div><div class="particle" style="width: 7.38834px; height: 7.38834px; left: 9.03214%; --drift: -31px; animation-duration: 22.0405s; animation-delay: -5.59901s;"></div><div class="particle" style="width: 4.56579px; height: 4.56579px; left: 3.92456%; --drift: -6px; animation-duration: 17.2114s; animation-delay: -13.4157s;"></div><div class="particle" style="width: 6.98988px; height: 6.98988px; left: 11.2444%; --drift: -6px; animation-duration: 23.5516s; animation-delay: -2.25246s;"></div><div class="particle" style="width: 5.00432px; height: 5.00432px; left: 95.8787%; --drift: 28px; animation-duration: 15.7486s; animation-delay: -4.27642s;"></div><div class="particle" style="width: 8.68418px; height: 8.68418px; left: 56.7574%; --drift: 26px; animation-duration: 21.7217s; animation-delay: -5.52331s;"></div><div class="particle" style="width: 5.00784px; height: 5.00784px; left: 78.3419%; --drift: -30px; animation-duration: 27.9319s; animation-delay: -9.19967s;"></div><div class="particle" style="width: 5.24122px; height: 5.24122px; left: 3.81246%; --drift: -2px; animation-duration: 14.4369s; animation-delay: -1.36177s;"></div><div class="particle" style="width: 3.24954px; height: 3.24954px; left: 13.8733%; --drift: 22px; animation-duration: 27.0106s; animation-delay: -10.1917s;"></div><div class="particle" style="width: 8.59748px; height: 8.59748px; left: 30.4236%; --drift: -21px; animation-duration: 26.6928s; animation-delay: -1.37332s;"></div><div class="particle" style="width: 7.16342px; height: 7.16342px; left: 21.6933%; --drift: -8px; animation-duration: 15.8252s; animation-delay: -11.8582s;"></div><div class="particle" style="width: 6.32255px; height: 6.32255px; left: 66.2505%; --drift: 11px; animation-duration: 16.8147s; animation-delay: -10.3962s;"></div><div class="particle" style="width: 8.71356px; height: 8.71356px; left: 11.8551%; --drift: -29px; animation-duration: 16.6801s; animation-delay: -4.58741s;"></div><div class="particle" style="width: 5.54392px; height: 5.54392px; left: 71.5118%; --drift: 37px; animation-duration: 26.4531s; animation-delay: -4.99119s;"></div><div class="particle" style="width: 8.19597px; height: 8.19597px; left: 40.1676%; --drift: 2px; animation-duration: 29.081s; animation-delay: -24.8967s;"></div><div class="particle" style="width: 4.34796px; height: 4.34796px; left: 96.8245%; --drift: 31px; animation-duration: 23.0069s; animation-delay: -0.170487s;"></div><div class="particle" style="width: 5.7705px; height: 5.7705px; left: 74.6095%; --drift: 5px; animation-duration: 27.9074s; animation-delay: -10.3527s;"></div><div class="particle" style="width: 6.9546px; height: 6.9546px; left: 90.2721%; --drift: 4px; animation-duration: 15.9647s; animation-delay: -11.4569s;"></div></div>
-<div class="scrim" id="scrim"></div>
+<div class="bg-particles" id="bgParticles" aria-hidden="true"></div>
 
-<div class="topbar">
-  <div class="top-left">
-    
-    <span class="wordmark">Galexer</span>
+<div class="app">
+  <div class="tabstrip" id="tabstrip"></div>
+
+  <div class="toolbar">
+    <button class="tool-btn" id="backBtn" aria-label="Back">
+      <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <button class="tool-btn" id="fwdBtn" aria-label="Forward">
+      <svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </button>
+    <button class="tool-btn" id="reloadBtn" aria-label="Reload">
+      <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+    </button>
+    <button class="tool-btn" id="homeBtn" aria-label="Home">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"></path><path d="M9 21V12h6v9"></path></svg>
+    </button>
+    <div class="addr-box">
+      <input type="text" id="addressInput" placeholder="Search or enter URL" aria-label="Address bar">
+    </div>
+    <div class="toolbar-spacer"></div>
+    <button class="tool-btn" id="fullscreenBtn" aria-label="Fullscreen">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
+    </button>
+    <button class="tool-btn" id="extensionsBtn" aria-label="Extensions">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M20 10h-2V8a2 2 0 0 0-2-2h-2V4a2 2 0 1 0-4 0v2H8a2 2 0 0 0-2 2v2H4a2 2 0 1 0 0 4h2v2a2 2 0 0 0 2 2h2v2a2 2 0 1 0 4 0v-2h2a2 2 0 0 0 2-2v-2h2a2 2 0 1 0 0-4z"></path></svg>
+    </button>
+    <button class="tool-btn" id="settingsBtn" aria-label="Settings">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
   </div>
-  
+
+  <div class="view-area" id="viewArea"></div>
 </div>
 
-<div class="shell">
-  
+<button class="fab" id="fabHome" aria-label="New tab">
+  <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+</button>
 
-  <main class="main">
-    <section class="hero">
-      <div class="glow" aria-hidden="true"></div>
-      <p class="brand-mark">Galexer</p>
-      <h1 class="greeting">Hi, what's on your mind?</h1>
+<template id="homeTemplate">
+  <section class="hero">
+    <p class="brand-mark">Galexer</p>
 
-      <div class="prompt-box">
-        <textarea id="promptInput" rows="1" placeholder="Ask anything"></textarea>
-        <div class="prompt-row">
-          <button class="add-btn" aria-label="Add images">
-            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          </button>
-          <button class="send-btn" id="sendBtn" aria-label="Send message">
-            <svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-          </button>
-        </div>
-      </div>
+    <div class="search-box">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" class="prompt-input" placeholder="Search or enter URL..." aria-label="Search">
+    </div>
 
-      
-    <section class="launcher" aria-label="Quick launch">
+    <div class="launcher" aria-label="Quick launch">
       <div class="launcher-grid">
-        <a class="launch-tile" href="https://discord.com/" target="_blank" rel="noopener" title="Discord">
-          <span class="tile-icon"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="4"></rect><circle cx="9" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle></svg></span>
-          <span class="tile-label">Discord</span>
-        </a>
-        <a class="launch-tile" href="https://github.com/" target="_blank" rel="noopener" title="GitHub">
-          <span class="tile-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 1.9 5.4 2.2 5.4 2.2a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 8.6c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"></path></svg></span>
-          <span class="tile-label">GitHub</span>
-        </a>
-        <a class="launch-tile" href="https://reddit.com/" target="_blank" rel="noopener" title="Reddit">
-          <span class="tile-icon"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"></circle><circle cx="9" cy="14" r="1"></circle><circle cx="15" cy="14" r="1"></circle><path d="M9 17c1 .7 4 .7 5 0"></path><path d="M12 6V3m0 0h2.5M18 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"></path></svg></span>
-          <span class="tile-label">Reddit</span>
-        </a>
-        <a class="launch-tile" href="https://open.spotify.com/" target="_blank" rel="noopener" title="Spotify">
-          <span class="tile-icon"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M7.5 10.5c3-1 6.5-.7 9 .8M7.5 13.2c2.4-.7 5.2-.5 7.3.7M8 15.7c1.9-.5 4-.4 5.7.6"></path></svg></span>
-          <span class="tile-label">Spotify</span>
-        </a>
-        <a class="launch-tile" href="https://www.tiktok.com/" target="_blank" rel="noopener" title="TikTok">
-          <span class="tile-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M15 3v10.5a3.5 3.5 0 1 1-3-3.46"></path><path d="M15 6.5a4.5 4.5 0 0 0 4.5 4.5"></path></svg></span>
-          <span class="tile-label">TikTok</span>
-        </a>
-        <a class="launch-tile" href="https://www.twitch.tv/" target="_blank" rel="noopener" title="Twitch">
-          <span class="tile-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M5 3 3 7v13h5v3l3-3h4l5-5V3z"></path><line x1="13" y1="8" x2="13" y2="13"></line><line x1="17.5" y1="8" x2="17.5" y2="13"></line></svg></span>
-          <span class="tile-label">Twitch</span>
-        </a>
-        <a class="launch-tile" href="https://en.wikipedia.org/" target="_blank" rel="noopener" title="Wikipedia">
-          <span class="tile-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M2 5h4l3 12 3-12h2l3 12 3-12h2"></path><path d="M4 5 8.5 19"></path></svg></span>
-          <span class="tile-label">Wikipedia</span>
-        </a>
-        <a class="launch-tile" href="https://www.youtube.com/" target="_blank" rel="noopener" title="YouTube">
-          <span class="tile-icon"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="4"></rect><polygon points="10 9 15 12 10 15 10 9"></polygon></svg></span>
-          <span class="tile-label">YouTube</span>
-        </a>
+        <button class="launch-tile" data-open="https://www.youtube.com" data-title="YouTube">
+          <span class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="4"></rect><polygon points="10 9 15 12 10 15 10 9"></polygon></svg></span>
+          <span class="tile-label">youtube</span>
+        </button>
+        <button class="launch-tile" data-open="https://github.com" data-title="GitHub">
+          <span class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 1.9 5.4 2.2 5.4 2.2a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 8.6c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"></path></svg></span>
+          <span class="tile-label">github</span>
+        </button>
+        <button class="launch-tile" data-open="https://discord.com" data-title="Discord">
+          <span class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="4"></rect><circle cx="9" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle></svg></span>
+          <span class="tile-label">discord</span>
+        </button>
+        <button class="launch-tile" data-open="https://x.com" data-title="X">
+          <span class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="4" x2="20" y2="20"></line><line x1="20" y1="4" x2="4" y2="20"></line></svg></span>
+          <span class="tile-label">twitter</span>
+        </button>
+        <button class="launch-tile" data-open="https://reddit.com" data-title="Reddit">
+          <span class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7"></circle><circle cx="9" cy="14" r="1"></circle><circle cx="15" cy="14" r="1"></circle><path d="M9 17c1 .7 4 .7 5 0"></path><path d="M12 6V3m0 0h2.5M18 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"></path></svg></span>
+          <span class="tile-label">reddit</span>
+        </button>
+        <button class="launch-tile" data-open="https://www.instagram.com" data-title="Instagram">
+          <span class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"></line></svg></span>
+          <span class="tile-label">instagram</span>
+        </button>
       </div>
-    </section></section>
+    </div>
 
-    
-<div class="made-by-animation">
-  <div class="line"></div>
-  <span class="made-text">Made by Noah</span>
-</div>
-
-    
-  </main>
-</div>
+    <div class="signature">
+      <div class="sig-line-wrap"><span class="sig-line"></span></div>
+      <p class="sig-text">Made by Noah</p>
+    </div>
+  </section>
+</template>
 
 <script>
-  // ---- rising particle field ----
+  const SEARCH_ENGINE_URL = 'https://duckduckgo.com/?q=';
+
+  // ---------------------------------------------------------------
+  // Rising particle field
+  // ---------------------------------------------------------------
   (function(){
     const field = document.getElementById('bgParticles');
-    const count = 26;
+    const count = 22;
     for(let i = 0; i < count; i++){
       const p = document.createElement('div');
       p.className = 'particle';
-      const size = 3 + Math.random() * 7;
+      const size = 3 + Math.random() * 6;
       const left = Math.random() * 100;
       const duration = 14 + Math.random() * 16;
       const delay = -Math.random() * duration;
@@ -375,99 +301,224 @@
     }
   })();
 
-  // ---- sidebar toggle (desktop collapse + mobile drawer) ----
-  const sidebar = document.getElementById('sidebar');
-  const scrim = document.getElementById('scrim');
-  const toggleBtn = document.getElementById('sidebarToggle');
-  function isMobile(){ return window.matchMedia('(max-width:860px)').matches; }
-  toggleBtn.addEventListener('click', () => {
-    if(isMobile()){
-      sidebar.classList.toggle('open');
-      scrim.classList.toggle('show');
-    } else {
-      sidebar.classList.toggle('collapsed');
-    }
-  });
-  scrim.addEventListener('click', () => {
-    sidebar.classList.remove('open');
-    scrim.classList.remove('show');
-  });
+  // ---------------------------------------------------------------
+  // Browser engine: tabs, address bar, view area
+  // ---------------------------------------------------------------
+  const tabstrip = document.getElementById('tabstrip');
+  const viewArea = document.getElementById('viewArea');
+  const addressInput = document.getElementById('addressInput');
+  const backBtn = document.getElementById('backBtn');
+  const fwdBtn = document.getElementById('fwdBtn');
+  const reloadBtn = document.getElementById('reloadBtn');
+  const homeBtn = document.getElementById('homeBtn');
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const homeTemplate = document.getElementById('homeTemplate');
 
-  // ---- prompt box: autosize + enable send on input ----
-  const promptInput = document.getElementById('promptInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const SEARCH_ENGINE_URL = 'https://duckduckgo.com/?q=';
+  let seq = 1;
+  let tabs = [];
+  let activeId = null;
 
-  function runSearch(){
-    const query = promptInput.value.trim();
-    if(!query) return;
-    window.open(SEARCH_ENGINE_URL + encodeURIComponent(query), '_blank', 'noopener');
-    promptInput.value = '';
-    promptInput.style.height = 'auto';
-    sendBtn.classList.remove('active');
+  function looksLikeUrl(input){
+    if(/^https?:\/\//i.test(input)) return true;
+    return /^[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?(\/[^\s]*)?$/i.test(input) && !input.includes(' ');
   }
 
-  promptInput.addEventListener('input', () => {
-    promptInput.style.height = 'auto';
-    promptInput.style.height = Math.min(promptInput.scrollHeight, 160) + 'px';
-    sendBtn.classList.toggle('active', promptInput.value.trim().length > 0);
-  });
-  promptInput.addEventListener('keydown', (e) => {
-    if(e.key === 'Enter' && !e.shiftKey){
-      e.preventDefault();
-      runSearch();
+  function resolveDestination(rawInput){
+    const q = rawInput.trim();
+    if(!q) return null;
+    if(looksLikeUrl(q)){
+      const url = /^https?:\/\//i.test(q) ? q : 'https://' + q;
+      let label;
+      try{ label = new URL(url).hostname.replace(/^www\./,''); }catch(e){ label = q; }
+      return {url, title:label};
     }
-  });
-  sendBtn.addEventListener('click', runSearch);
-
-  // "Search" chip: focus the box, or run immediately if there's already a query
-  document.querySelectorAll('.chip')[0].addEventListener('click', () => {
-    if(promptInput.value.trim()){ runSearch(); } else { promptInput.focus(); }
-  });
-
-  // Top bar search icon: jump to the prompt box to start a web search
-  document.getElementById('topSearchBtn').addEventListener('click', () => {
-    promptInput.scrollIntoView({behavior:'smooth', block:'center'});
-    promptInput.focus();
-  });
-
-  // ---- gallery: placeholder tiles (swap thumbGradient for real <img> in production) ----
-  const gallery = [
-    {title:'Neon skyline study', tag:'Art', hue:'260'},
-    {title:'Weekend trail map', tag:'Explore', hue:'150'},
-    {title:'Retro arcade cabinet', tag:'Games', hue:'330'},
-    {title:'Sourdough crumb shot', tag:'Trending', hue:'40'},
-    {title:'Low-poly mountain range', tag:'Art', hue:'200'},
-    {title:'Market close heatmap', tag:'Trends', hue:'20'},
-    {title:'Rooftop garden layout', tag:'Explore', hue:'110'},
-    {title:'Synthwave album cover', tag:'Art', hue:'290'},
-  ];
-  const grid = document.getElementById('galleryGrid');
-  function renderGallery(){
-    grid.innerHTML = gallery.map(g => `
-      <div class="tile">
-        <div class="tile-thumb" style="background:linear-gradient(160deg, hsl(${g.hue} 70% 22%), hsl(${g.hue} 60% 10%));">
-          <span class="badge">${g.tag}</span>
-          <div class="overlay">
-            <button aria-label="Download">
-              <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            </button>
-            <button aria-label="Open">
-              <svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-            </button>
-          </div>
-        </div>
-        <div class="tile-caption">${g.title}</div>
-      </div>
-    `).join('');
+    return {url: SEARCH_ENGINE_URL + encodeURIComponent(q), title: q};
   }
-  renderGallery();
-  document.getElementById('refreshGallery').addEventListener('click', () => {
-    gallery.sort(() => Math.random() - 0.5);
-    renderGallery();
+
+  function newTab(dest){
+    const tab = { id: seq++, title: dest ? dest.title : 'New Tab', url: dest ? dest.url : null };
+    tabs.push(tab);
+    activeId = tab.id;
+    renderTabstrip();
+    renderView();
+    return tab;
+  }
+
+  function closeTab(id){
+    const idx = tabs.findIndex(t => t.id === id);
+    if(idx === -1) return;
+    tabs.splice(idx, 1);
+    if(tabs.length === 0){ newTab(); return; }
+    if(activeId === id){
+      const neighbor = tabs[idx] || tabs[idx - 1];
+      activeId = neighbor.id;
+    }
+    renderTabstrip();
+    renderView();
+  }
+
+  function switchTab(id){
+    activeId = id;
+    renderTabstrip();
+    renderView();
+  }
+
+  function activeTab(){ return tabs.find(t => t.id === activeId); }
+
+  function navigateActiveTab(dest){
+    const tab = activeTab();
+    if(!tab || !dest) return;
+    tab.url = dest.url;
+    tab.title = dest.title;
+    renderTabstrip();
+    renderView();
+  }
+
+  function goHome(){
+    const tab = activeTab();
+    if(!tab) return;
+    tab.url = null;
+    tab.title = 'New Tab';
+    renderTabstrip();
+    renderView();
+  }
+
+  function renderTabstrip(){
+    tabstrip.innerHTML = tabs.map(t => `
+      <button class="tab ${t.id === activeId ? 'active' : ''}" data-tab-id="${t.id}">
+        <span class="tab-title">${t.title}</span>
+        <span class="tab-close" data-close-id="${t.id}">
+          <svg class="icon" viewBox="0 0 24 24" style="width:11px;height:11px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </span>
+      </button>
+    `).join('') + `
+      <button class="new-tab-btn" id="newTabBtn" aria-label="New tab">
+        <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+    `;
+    tabstrip.querySelectorAll('.tab').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if(e.target.closest('[data-close-id]')) return;
+        switchTab(Number(el.dataset.tabId));
+      });
+    });
+    tabstrip.querySelectorAll('[data-close-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeTab(Number(el.dataset.closeId));
+      });
+    });
+    document.getElementById('newTabBtn').addEventListener('click', () => newTab());
+  }
+
+  function renderView(){
+    const tab = activeTab();
+    viewArea.innerHTML = '';
+    if(!tab) return;
+
+    addressInput.value = tab.url || '';
+    backBtn.disabled = !tab.url;
+    fwdBtn.disabled = !tab.url;
+
+    if(!tab.url){
+      const view = document.createElement('div');
+      view.className = 'view';
+      view.appendChild(homeTemplate.content.cloneNode(true));
+      viewArea.appendChild(view);
+      wireHomeView(view);
+      reloadBtn.onclick = () => { renderView(); };
+      backBtn.onclick = null;
+      fwdBtn.onclick = null;
+      return;
+    }
+
+    const view = document.createElement('div');
+    view.className = 'view';
+    view.style.overflow = 'hidden';
+
+    const iframe = document.createElement('iframe');
+    iframe.src = tab.url;
+    iframe.setAttribute('referrerpolicy', 'no-referrer');
+    view.appendChild(iframe);
+
+    const note = document.createElement('div');
+    note.className = 'frame-note';
+    note.innerHTML = `
+      <span>Some sites block being shown inside another page for security. If this tab looks blank, open it directly instead.</span>
+      <button type="button" data-open-external>
+        <svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        Open directly
+      </button>
+    `;
+    note.querySelector('[data-open-external]').addEventListener('click', () => {
+      window.open(tab.url, '_blank', 'noopener');
+    });
+    view.appendChild(note);
+
+    viewArea.appendChild(view);
+
+    reloadBtn.onclick = () => { iframe.src = tab.url; };
+    backBtn.onclick = () => { try{ iframe.contentWindow.history.back(); }catch(e){} };
+    fwdBtn.onclick = () => { try{ iframe.contentWindow.history.forward(); }catch(e){} };
+  }
+
+  function wireHomeView(root){
+    const promptInput = root.querySelector('.prompt-input');
+
+    function submitPrompt(){
+      const dest = resolveDestination(promptInput.value);
+      if(!dest) return;
+      navigateActiveTab(dest);
+    }
+    promptInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){ e.preventDefault(); submitPrompt(); }
+    });
+
+    root.querySelectorAll('.launch-tile').forEach(tile => {
+      tile.addEventListener('click', () => {
+        newTab({url: tile.dataset.open, title: tile.dataset.title});
+      });
+    });
+
+    // Rotating-font signature credit, re-wired each time the home view renders
+    const sigLine = root.querySelector('.sig-line');
+    const sigText = root.querySelector('.sig-text');
+    if(sigLine && sigText){
+      const SIGNATURE_FONTS = [
+        "'Inter', sans-serif", "'Lora', serif", "'Fira Code', monospace",
+        "'Playfair Display', serif", "'Bebas Neue', sans-serif", "'Pacifico', cursive",
+        "'Space Mono', monospace", "'Caveat', cursive", "'Righteous', sans-serif",
+        "'Cormorant Garamond', serif"
+      ];
+      let fontIndex = Math.floor(Math.random() * SIGNATURE_FONTS.length);
+      function applyNextFont(){
+        sigText.style.fontFamily = SIGNATURE_FONTS[fontIndex];
+        fontIndex = (fontIndex + 1) % SIGNATURE_FONTS.length;
+      }
+      applyNextFont();
+      sigLine.addEventListener('animationiteration', applyNextFont);
+    }
+  }
+
+  // Address bar controls
+  function submitAddressBar(){
+    const dest = resolveDestination(addressInput.value);
+    if(dest) navigateActiveTab(dest);
+  }
+  addressInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ submitAddressBar(); }
   });
+
+  homeBtn.addEventListener('click', goHome);
+  document.getElementById('fabHome').addEventListener('click', () => newTab());
+  fullscreenBtn.addEventListener('click', () => {
+    if(!document.fullscreenElement){ document.documentElement.requestFullscreen().catch(()=>{}); }
+    else{ document.exitFullscreen().catch(()=>{}); }
+  });
+
+  // Boot with a single New Tab
+  newTab();
 </script>
 
-
-
-</body></html>
+</body>
+</html>
