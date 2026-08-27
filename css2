@@ -439,3 +439,53 @@
   src: url(https://fonts.gstatic.com/s/lora/v37/0QI6MX1D_JOuGQbT0gvTJPa787wsuxJBkq0.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+.made-by-animation {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 20px auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* The animated line */
+.made-by-animation .line {
+  height: 3px;
+  background: var(--text);
+  width: 0;
+  animation: lineGrow 2s ease forwards,
+             lineShrink 2s ease 5s forwards;
+}
+
+/* The text */
+.made-by-animation .made-text {
+  margin-top: 10px;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity .5s ease;
+  animation: showText .5s ease 2s forwards,
+             hideText .5s ease 5s forwards;
+}
+
+/* Keyframes */
+@keyframes lineGrow {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+@keyframes showText {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes hideText {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes lineShrink {
+  from { width: 100%; }
+  to   { width: 0; }
+}
