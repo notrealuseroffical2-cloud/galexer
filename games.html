@@ -1,316 +1,965 @@
 <!DOCTYPE html>
 <html lang="en">
-   <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link rel="icon" type="image/png" href="png/logo.png"/>
-      <title>Truffled - Math</title>
-      <meta name="title" content="Truffled - Interactive Learning Resources">
-      <meta name="description" content="Truffled is an educational platform offering interactive activities, brain-training challenges, and creative learning tools for students.">
-      <meta property="og:type" content="website">
-      <meta property="og:url" content="https://truffled.lol/">
-      <meta property="og:title" content="Truffled - Interactive Learning Resources">
-      <meta property="og:description" content="Explore engaging educational content, problem-solving challenges, and interactive tools designed to support learning.">
-      <meta property="og:image" content="https://truffled.lol/png/logo.png">
-      <meta name="twitter:card" content="summary_large_image">
-      <meta name="twitter:url" content="https://truffled.lol/">
-      <meta name="twitter:title" content="Truffled - Interactive Learning Resources">
-      <meta name="twitter:description" content="A safe and clean educational site offering interactive activities and learning-focused tools.">
-      <meta name="twitter:image" content="https://truffled.lol/png/logo.png">
-      <link rel="canonical" href="https://truffled.lol/">
-      <link rel="stylesheet" href="css/style.css">
-      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-   </head>
-   <body>
-      <div class="navbar-right">
-          <a href="/"><img src="png/house-solid.svg" alt="h"></a>
-          <a href="g"><img src="png/gamepad-solid.svg" alt="g"></a>
-          <a href="a"><img src="png/apps.svg" alt="a"></a>
-          <a href="t"><img src="png/tool.svg" alt="t"></a>
-          <a href="https://discord.gg/vVqY36mzvj"><img src="png/other.svg" alt="d"></a>
-          <a href="s"><img src="png/gear-solid.svg" alt="s"></a>
-      </div>
-      <div class="content">
-         <h4>Games</h4>
-         <div id="searchCount" style="color: #ffffff; text-align: center; font-family: 'Poppins', sans-serif; font-size: 1.2rem; font-weight: 600; letter-spacing: 0.5px;">Loading games...</div>
-         <input type="text" id="searchInput" class="search-bar" placeholder="Search games..." autocomplete="off">
-         <div id="autocomplete" class="autocomplete-list"></div>
-         <div class="container">
-            <div class="game-gallery" id="gameGallery"></div>
-         </div>
-      </div>
-      <script src="js/cloak.js"></script>
-      <script src="/js/panic.js"></script>
-      <script src="/js/search.js"></script>
-      <script src="/js/mobile.js"></script>
-      <script>
-            class GameLoader {
-            constructor() {
-                this.games = [];
-                this.totalGames = 0;
-                this.popularGames = [
-                    "Five Nights At Epsteins, Webport",
-                    "Cuphead, Webport",
-                    "Hollow Knight, Webport",
-                    "Silksong, Webport",
-                    "Balatro, Webport"
-                ];
-                this.directOpenUrls = [
-                    '/games/amaze/index.html'
-                ];
-            }
-            async init() {
-                try {
-                    await this.loadGames();
-                    this.renderGames();
-                    this.setupSearch();
-                    this.updateGameCount();
-                } catch (err) {
-                    console.error('game load error', err);
-                    this.showError('refresh to fix');
-                }
-            }
-            async loadGames() {
-                try {
-                    const response = await fetch('/js/json/g.json');
-                    if (!response.ok) throw new Error('g.json not found');
-                    const data = await response.json();
-                    this.games = data.games || [];
-                    this.totalGames = this.games.length;
-                } catch (err) {
-                    console.error('error loading:', err);
-                    throw err;
-                }
-            }
-            getGameUrl(game) {
-                let url = game.url;
-                if (game.requiresPrefix) {
-                    const prefix = sessionStorage.getItem("prefix") || '';
-                    url = url.replace('{prefix}', prefix);
-                }
-                if (typeof transformGameUrl === 'function') {
-                    url = transformGameUrl(url);
-                }
-                
-                return url;
-            }
-            getGameDestination(game) {
-                const url = this.getGameUrl(game);
-                const frameType = game.frameType || 'iframe';
-                const shouldOpenDirectly = this.shouldOpenDirectly(url);
-                return shouldOpenDirectly ? url :
-                    (frameType === 'unity' ? `/unityframe.html?url=${encodeURIComponent(url)}` :
-                    `/iframe.html?url=${encodeURIComponent(url)}`);
-            }
-            shouldOpenDirectly(url) {
-                return this.directOpenUrls.some(directUrl => url.includes(directUrl));
-            }
-            getFramePage(url) {
-                if (this.shouldOpenDirectly(url)) {
-                    return null; 
-                }
-                if (url.includes('/mobile.html?url=')) {
-                    return '/iframe.html';
-                }            
-                const game = this.games.find(g => url.includes(g.url.split('?')[0]));
-                const frameType = game?.frameType || 'iframe';
-                return frameType === 'unity' ? '/unityframe.html' : '/iframe.html';
-            }
-            renderGames() {
-                const gallery = document.getElementById('gameGallery');
-                if (!gallery) return;
-                gallery.innerHTML = '';
-                gallery.appendChild(this.createGameSuggestionCard());
-                gallery.appendChild(this.createRandomGameCard());
-                this.games.forEach((game, index) => {
-                    const gameCard = this.createGameCard(game, index);
-                    gallery.appendChild(gameCard);
-                });
-            }
-            createGameSuggestionCard() {
-                const div = document.createElement('div');
-                div.className = 'game';
-                div.setAttribute('data-name', 'Game Suggestions');
-                div.appendChild(this.createCardLink({
-                    href: 'https://discord.com/channels/1400743472205398088/1412911144913604618',
-                    name: 'Game Suggestions',
-                    thumbnail: '/png/games/forms.webp',
-                    loading: 'eager'
-                }));
-                return div;
-            }
-            createRandomGameCard() {
-                const div = document.createElement('div');
-                div.className = 'game';
-                div.setAttribute('data-name', 'Random game');
-                div.onclick = () => this.pickRandomGame();
-                div.appendChild(this.createCardLink({
-                    href: 'javascript:void(0);',
-                    name: 'Random game',
-                    thumbnail: 'png/vid/random.gif',
-                    mediaType: 'video',
-                    loading: 'eager'
-                }));
-                return div;
-            }
-            createGameCard(game, index) {
-                const div = document.createElement('div');
-                div.className = 'game';
-                div.setAttribute('data-name', game.name);
-                div.dataset.searchNames = [game.name, ...(game.altNames || [])].join('\n').toLowerCase();
-                const loadingAttr = index < 12 ? 'eager' : 'lazy';
-                div.appendChild(this.createCardLink({
-                    href: this.getGameDestination(game),
-                    name: game.name,
-                    thumbnail: game.thumbnail,
-                    mediaType: game.mediaType,
-                    loading: loadingAttr
-                }));
-                return div;
-            }
-            createCardLink({ href, name, thumbnail, mediaType = 'image', loading = 'lazy' }) {
-                const link = document.createElement('a');
-                link.href = href;
-                link.className = 'game-link';
-                link.dataset.name = name;
-                let media;
-                if (mediaType === 'video') {
-                    media = document.createElement('video');
-                    media.src = thumbnail;
-                    media.autoplay = true;
-                    media.muted = true;
-                    media.loop = true;
-                    media.playsInline = true;
-                    media.preload = loading === 'eager' ? 'auto' : 'metadata';
-                } else {
-                    media = document.createElement('img');
-                    media.src = thumbnail;
-                    media.alt = name;
-                    media.loading = loading;
-                    media.decoding = 'async';
-                    media.addEventListener('error', () => {
-                        if (media.dataset.fallbackApplied === 'true') return;
-                        media.dataset.fallbackApplied = 'true';
-                        media.src = '/png/logo.png';
-                    });
-                }
-                media.className = 'game-thumbnail';
-                link.appendChild(media);
-                return link;
-            }
-            setupSearch() {
-                const searchInput = document.getElementById('searchInput');
-                const autocomplete = document.getElementById('autocomplete');
-                if (!searchInput || !autocomplete) return;
-                
-                searchInput.addEventListener('input', (e) => {
-                    const filter = e.target.value.toLowerCase().trim();
-                    if (!filter) {
-                        this.updateGameCount();
-                        this.hideSuggestions(autocomplete);
-                        return;
-                    }
-                    const matches = this.findMatches(filter);
-                    this.showSuggestions(matches, autocomplete);
-                    this.updateGameCount(matches.length);
-                });
-                searchInput.addEventListener('focus', () => {
-                    if (!searchInput.value.trim()) {
-                        const popularMatches = this.getPopularGames();
-                        this.showSuggestions(popularMatches, autocomplete);
-                    }
-                });
-                document.addEventListener('click', (e) => {
-                    if (!autocomplete.contains(e.target) && e.target !== searchInput) {
-                        this.hideSuggestions(autocomplete);
-                    }
-                });
-            }
-            findMatches(filter) {
-                return this.games.filter(game => {
-                    const names = [game.name, ...(game.altNames || [])];
-                    return names.some(name => name.toLowerCase().includes(filter));
-                });
-            }
-            getPopularGames() {
-                return this.games.filter(game => 
-                    this.popularGames.includes(game.name)
-                );
-            }
-            showSuggestions(matches, autocomplete) {
-                autocomplete.innerHTML = '';
-                if (matches.length > 0) {
-                    matches.forEach((match) => {
-                        const item = document.createElement('div');
-                        item.className = 'autocomplete-item';
-                        
-                        const thumbnail = document.createElement('img');
-                        thumbnail.src = match.thumbnail;
-                        thumbnail.alt = match.name;
-                        thumbnail.loading = 'lazy';
-                        thumbnail.addEventListener('error', () => {
-                            if (thumbnail.dataset.fallbackApplied === 'true') return;
-                            thumbnail.dataset.fallbackApplied = 'true';
-                            thumbnail.src = '/png/logo.png';
-                        });
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galexer</title>
+<meta name="theme-color" content="#0A0A0D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,500;1,500&family=Fira+Code:wght@400;500&family=Playfair+Display:wght@600&family=Bebas+Neue&family=Pacifico&family=Space+Mono:wght@400;700&family=Caveat:wght@600&family=Righteous&family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0D;
+  --surface:#141217;
+  --surface-2:#1C1922;
+  --surface-3:#241F30;
+  --border:#2C2836;
+  --border-2:#3A3450;
+  --text:#EDEBF5;
+  --muted:#9C98AC;
+  --primary:#A855F7;
+  --primary-dim:#5B21B6;
+  --primary-ink:#1A0F2E;
+  --primary-bg:rgba(168,85,247,0.12);
+  --ring:rgba(168,85,247,0.35);
+  --sidebar-w:220px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+a{color:inherit;text-decoration:none;}
+::selection{background:var(--primary);color:var(--primary-ink);}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 
-                        const label = document.createElement('span');
-                        label.textContent = match.name;
+/* ── rising particles ── */
+.bg-particles{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none;}
+.particle{
+  position:absolute;bottom:-40px;border-radius:50%;
+  background:#FFFFFF;opacity:0;
+  box-shadow:0 0 12px 4px rgba(255,255,255,0.6);
+  animation-name:rise;animation-timing-function:linear;animation-iteration-count:infinite;
+}
+@keyframes rise{
+  0%{transform:translateY(0) translateX(0);opacity:0;}
+  8%{opacity:.8;}
+  85%{opacity:.5;}
+  100%{transform:translateY(-110vh) translateX(var(--drift,20px));opacity:0;}
+}
+@media(prefers-reduced-motion:reduce){.particle{display:none;}}
 
-                        item.appendChild(thumbnail);
-                        item.appendChild(label);
-                        item.onclick = () => this.selectSuggestedGame(match, autocomplete);
-                        autocomplete.appendChild(item);
-                    });
-                    autocomplete.style.display = 'block';
-                } else {
-                    this.hideSuggestions(autocomplete);
-                }
-            }
-            hideSuggestions(autocomplete) {
-                autocomplete.style.display = 'none';
-                autocomplete.innerHTML = '';
-            }
-            selectSuggestedGame(game, autocomplete) {
-                if (!game) return;
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput) {
-                    searchInput.value = game.name;
-                }
-                this.hideSuggestions(autocomplete);
-                this.updateGameCount(1);
-            }
-            updateGameCount(count = null) {
-                const searchCount = document.getElementById('searchCount');
-                if (!searchCount) return;
-                if (count === null) {
-                    searchCount.textContent = `Showing all ${this.totalGames} games`;
-                } else {
-                    const label = count === 1 ? 'match' : 'matches';
-                    searchCount.textContent = `Found ${count} ${label} in ${this.totalGames} games`;
-                }
-            }
-            pickRandomGame() {
-                if (this.games.length === 0) return;
-                const randomGame = this.games[Math.floor(Math.random() * this.games.length)];       
-                window.location.href = this.getGameDestination(randomGame);
-            }
-            showError(message) {
-                const gallery = document.getElementById('gameGallery');
-                if (gallery) {
-                    gallery.innerHTML = `
-                        <div style="color: white; text-align: center; padding: 2rem; width: 100%;">
-                        <p>${message}</p>
-                        </div>
-                    `;
-                }
-            }
-            }
-            document.addEventListener('DOMContentLoaded', () => {
-                const loader = new GameLoader();
-                loader.init();
-                window.pickRandomGame = () => loader.pickRandomGame();
-            });
-      </script>
-   </body>
+/* ── shell ── */
+.shell{position:relative;z-index:1;display:flex;height:100vh;overflow:hidden;}
+
+/* ══════════ SIDEBAR ══════════ */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:8px 8px;gap:2px;
+  overflow-y:auto;scrollbar-width:none;transition:width .25s ease;
+}
+.sidebar::-webkit-scrollbar{display:none;}
+.sidebar.collapsed{width:52px;}
+
+.sidebar-logo{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 8px 14px;
+  font-weight:700;font-size:1.25rem;letter-spacing:.15em;
+  color:var(--primary);text-transform:uppercase;
+  overflow:hidden;white-space:nowrap;
+}
+.sidebar.collapsed .sidebar-logo .logo-text{display:none;}
+
+.sidebar-divider{height:1px;background:var(--border);margin:6px 2px;}
+
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:10px;
+  color:var(--muted);font-size:13px;font-weight:500;
+  cursor:pointer;transition:background .15s,color .15s,border-color .15s;
+  border:1.5px solid transparent;
+  white-space:nowrap;overflow:hidden;
+}
+.nav-item:hover{background:var(--surface-2);color:var(--text);}
+.nav-item.active{background:var(--primary-bg);color:var(--primary);border-color:var(--primary-dim);}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item .nav-label{transition:opacity .15s;}
+.sidebar.collapsed .nav-label{opacity:0;pointer-events:none;}
+.nav-item[title]:hover::after{
+  content:attr(title);
+  position:fixed;left:60px;
+  background:var(--surface-3);border:1px solid var(--border-2);
+  color:var(--text);font-size:12px;padding:4px 10px;border-radius:6px;
+  pointer-events:none;z-index:999;white-space:nowrap;
+}
+
+/* Browse expand panel */
+.browse-expand{
+  overflow:hidden;max-height:0;transition:max-height .3s ease;
+  display:flex;flex-direction:column;gap:0;
+}
+.browse-expand.open{max-height:320px;}
+.sidebar.collapsed .browse-expand{display:none;}
+.bexp-toolbar{
+  display:flex;align-items:center;gap:4px;
+  padding:6px 4px;border-top:1px solid var(--border);
+}
+.bexp-addr{
+  flex:1;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:6px;padding:4px 8px;color:var(--text);
+  font-size:11px;font-family:inherit;
+}
+.bexp-addr:focus{outline:none;border-color:var(--primary);}
+.bexp-btn{
+  width:24px;height:24px;border-radius:5px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);background:var(--surface-2);border:1px solid var(--border);
+  cursor:pointer;transition:all .12s;
+}
+.bexp-btn:hover{color:var(--text);border-color:var(--border-2);}
+.bexp-btn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.bexp-frame-wrap{
+  flex:1;min-height:0;height:240px;position:relative;
+}
+.bexp-iframe{width:100%;height:100%;border:none;display:block;background:#fff;}
+.bexp-blocked{
+  position:absolute;bottom:6px;left:6px;right:6px;
+  background:rgba(20,18,23,.9);border:1px solid var(--border);
+  border-radius:7px;padding:7px 10px;font-size:11px;color:var(--muted);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  backdrop-filter:blur(4px);z-index:5;
+}
+.bexp-blocked button{
+  background:var(--primary);color:var(--primary-ink);border:none;
+  border-radius:999px;padding:3px 9px;font-size:10px;font-weight:700;cursor:pointer;
+}
+
+/* sidebar bottom */
+.sidebar-bottom{margin-top:auto;padding-top:10px;display:flex;flex-direction:column;gap:4px;}
+.cloak-label{
+  font-size:10px;color:var(--muted);padding:0 6px;
+  text-transform:uppercase;letter-spacing:.07em;
+  white-space:nowrap;overflow:hidden;
+}
+.sidebar.collapsed .cloak-label{display:none;}
+.cloak-opt{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;
+  color:var(--muted);font-size:12px;cursor:pointer;
+  border:1px solid transparent;transition:all .15s;
+  white-space:nowrap;overflow:hidden;
+}
+.cloak-opt:hover{background:var(--surface-2);color:var(--text);}
+.cloak-opt.active{background:var(--primary-bg);color:var(--primary);border-color:var(--primary-dim);}
+.cloak-opt svg{width:13px;height:13px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.sidebar.collapsed .cloak-opt .nav-label{display:none;}
+.panic-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px 10px;border-radius:8px;margin-top:2px;
+  background:rgba(220,38,38,.15);color:#F87171;
+  border:1px solid rgba(220,38,38,.3);font-size:12px;font-weight:600;
+  cursor:pointer;transition:all .15s;white-space:nowrap;overflow:hidden;
+}
+.panic-btn:hover{background:rgba(220,38,38,.25);}
+.sidebar.collapsed .panic-btn .nav-label{display:none;}
+
+/* toggle button */
+.sidebar-toggle{
+  position:absolute;top:50%;right:-12px;transform:translateY(-50%);
+  width:22px;height:22px;border-radius:50%;z-index:10;
+  background:var(--surface-2);border:1px solid var(--border-2);
+  color:var(--muted);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;flex-shrink:0;
+}
+.sidebar-toggle:hover{background:var(--surface-3);color:var(--primary);}
+.sidebar-toggle svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s;}
+.sidebar.collapsed .sidebar-toggle svg{transform:rotate(180deg);}
+.sidebar-wrap{position:relative;flex-shrink:0;}
+
+/* ══════════ MAIN ══════════ */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;}
+
+/* tabs */
+.tabstrip{
+  display:flex;align-items:flex-end;gap:4px;
+  padding:8px 8px 0;flex-shrink:0;
+  overflow-x:auto;scrollbar-width:thin;background:var(--bg);
+}
+.tabstrip::-webkit-scrollbar{height:3px;}
+.tab{
+  display:flex;align-items:center;gap:7px;
+  min-width:120px;max-width:200px;flex-shrink:1;
+  padding:8px 10px 8px 13px;border-radius:8px 8px 0 0;
+  background:var(--surface);color:var(--muted);
+  border:1px solid var(--border);border-bottom:none;
+  cursor:pointer;transition:all .12s;
+}
+.tab.active{background:var(--surface-2);color:var(--primary);border-color:var(--primary-dim);border-top-width:2px;}
+.tab-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;font-weight:600;}
+.tab-close{width:15px;height:15px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .12s;}
+.tab-close:hover{background:rgba(255,255,255,.14);color:var(--text);}
+.new-tab-btn{
+  width:32px;height:32px;border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);background:var(--surface);border:1px solid var(--border);transition:all .12s;
+}
+.new-tab-btn:hover{color:var(--text);border-color:var(--border-2);}
+
+/* toolbar */
+.toolbar{
+  display:flex;align-items:center;gap:6px;padding:7px 8px;flex-shrink:0;
+  background:var(--surface-2);border-bottom:1px solid var(--border);
+}
+.tool-btn{
+  width:32px;height:32px;border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);background:var(--surface);border:1px solid var(--border);transition:all .12s;
+}
+.tool-btn:hover{color:var(--text);border-color:var(--border-2);}
+.tool-btn:disabled{opacity:.35;pointer-events:none;}
+.tool-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.addr-box{
+  flex:1;min-width:0;display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:7px;padding:0 12px;height:32px;transition:border-color .15s;
+}
+.addr-box:focus-within{border-color:var(--primary);}
+.addr-box svg{width:13px;height:13px;stroke:var(--muted);fill:none;stroke-width:1.8;flex-shrink:0;}
+.addr-box input{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-size:13px;height:100%;font-family:inherit;}
+.addr-box input::placeholder{color:var(--muted);}
+
+/* view area */
+.view-area{flex:1;min-height:0;position:relative;background:var(--bg);}
+.view{position:absolute;inset:0;overflow:hidden;}
+.view.scroll{overflow-y:auto;}
+
+/* ══════════ HOME PAGE ══════════ */
+.home-page{
+  min-height:100%;display:flex;flex-direction:column;
+  align-items:center;padding:16vh 20px 40px;text-align:center;
+}
+.brand-mark{
+  font-family:'Inter',sans-serif;font-weight:700;font-size:2.6rem;
+  letter-spacing:.18em;margin:0 0 30px;color:var(--primary);text-transform:uppercase;
+}
+.home-search{
+  width:100%;max-width:460px;display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:13px 16px;transition:border-color .15s,box-shadow .15s;
+}
+.home-search:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px var(--ring);}
+.home-search svg{color:var(--primary);flex-shrink:0;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.home-search input{flex:1;background:transparent;border:none;color:var(--text);font-size:14px;font-family:inherit;}
+.home-search input::placeholder{color:var(--muted);}
+.home-search input:focus{outline:none;}
+
+.quick-tiles{margin-top:30px;display:flex;flex-wrap:wrap;justify-content:center;gap:28px;}
+.qtile{display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:none;color:inherit;cursor:pointer;}
+.qtile-icon{
+  width:46px;height:46px;border-radius:13px;
+  background:var(--surface-2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.qtile:hover .qtile-icon{border-color:var(--primary-dim);background:var(--primary-bg);}
+.qtile-icon svg{width:21px;height:21px;stroke:var(--muted);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.qtile:hover .qtile-icon svg{stroke:var(--primary);}
+.qtile-label{font-size:11px;font-weight:600;color:var(--muted);}
+.qtile:hover .qtile-label{color:var(--text);}
+
+.signature{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:56px;}
+.sig-line-wrap{width:200px;max-width:60%;}
+.sig-line{
+  display:block;width:100%;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--primary),transparent);
+  transform-origin:left center;transform:scaleX(0);
+  animation:sigLineGrow 10s ease-in-out infinite;
+}
+.sig-text{margin:0;font-size:1rem;letter-spacing:.02em;color:var(--muted);opacity:0;animation:sigTextFade 10s ease-in-out infinite;}
+@keyframes sigLineGrow{0%{transform:scaleX(0);}8%{transform:scaleX(1);}45%{transform:scaleX(1);}51%{transform:scaleX(0);}100%{transform:scaleX(0);}}
+@keyframes sigTextFade{0%{opacity:0;}8%{opacity:0;}12%{opacity:1;}42%{opacity:1;}45%{opacity:0;}100%{opacity:0;}}
+@media(prefers-reduced-motion:reduce){.sig-line,.sig-text{animation:none;transform:scaleX(1);opacity:1;}}
+
+/* ══════════ GAMES (gn-math) ══════════ */
+.games-page{height:100%;background:var(--bg);padding:14px;display:flex;flex-direction:column;gap:12px;overflow:hidden;}
+.games-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;}
+.games-title{font-size:1rem;font-weight:700;color:var(--primary);}
+.games-count{font-size:12px;color:var(--muted);}
+.games-search{
+  flex:1;min-width:150px;max-width:300px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:6px 12px;
+  color:var(--text);font-size:13px;font-family:inherit;transition:border-color .15s;
+}
+.games-search:focus{outline:none;border-color:var(--primary);}
+.games-search::placeholder{color:var(--muted);}
+.games-sort{
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--text);font-size:12px;padding:6px 10px;
+  border-radius:8px;cursor:pointer;font-family:inherit;
+}
+.games-sort:focus{outline:none;border-color:var(--primary);}
+.zone-grid-wrap{flex:1;overflow-y:auto;scrollbar-width:thin;}
+.zone-grid-wrap::-webkit-scrollbar{width:4px;}
+.zone-grid-wrap::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px;}
+.zone-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;
+}
+.zone-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;cursor:pointer;
+  transition:border-color .15s,transform .12s,box-shadow .15s;
+}
+.zone-card:hover{border-color:var(--primary-dim);transform:translateY(-2px);box-shadow:0 6px 20px rgba(168,85,247,.15);}
+.zone-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--surface-2);display:block;}
+.zone-thumb-ph{
+  width:100%;aspect-ratio:16/9;background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+}
+.zone-name{padding:5px 8px;font-size:11px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* zone viewer overlay */
+.zone-viewer{
+  position:absolute;inset:0;background:var(--bg);
+  display:none;flex-direction:column;z-index:10;
+}
+.zone-viewer.open{display:flex;}
+.zone-top{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;
+  background:var(--surface-2);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;
+}
+.zone-top-title{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:80px;}
+.zone-top-sub{font-size:11px;color:var(--muted);flex-shrink:0;}
+.zone-action{
+  padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;
+  background:var(--surface);border:1px solid var(--border);color:var(--muted);
+  cursor:pointer;transition:all .12s;flex-shrink:0;
+}
+.zone-action:hover{border-color:var(--border-2);color:var(--text);}
+.zone-action.primary{background:var(--primary-bg);border-color:var(--primary-dim);color:var(--primary);}
+.zone-iframe{flex:1;border:none;width:100%;display:block;background:#111;}
+
+/* skeleton shimmer */
+.zone-skel{
+  background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%);
+  background-size:200% 100%;animation:skel 1.4s linear infinite;
+  border-radius:10px;
+}
+.zone-skel-thumb{width:100%;aspect-ratio:16/9;}
+.zone-skel-name{height:20px;margin:6px 8px;border-radius:4px;width:70%;}
+@keyframes skel{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* ══════════ GENERIC PANELS ══════════ */
+.panel-page{
+  min-height:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:12px;color:var(--muted);padding:40px;text-align:center;
+}
+.panel-page h2{font-size:1.2rem;font-weight:600;color:var(--text);}
+.panel-page p{font-size:13px;max-width:320px;line-height:1.7;}
+.panel-launch{
+  margin-top:8px;padding:10px 20px;border-radius:8px;
+  background:var(--primary-bg);border:1px solid var(--primary-dim);
+  color:var(--primary);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;
+}
+.panel-launch:hover{background:rgba(168,85,247,.22);}
+
+/* ══════════ IFRAME (external URL tab) ══════════ */
+.ext-frame-note{
+  position:absolute;left:14px;right:14px;bottom:14px;z-index:5;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:rgba(20,18,23,.94);border:1px solid var(--border);
+  border-radius:10px;padding:10px 14px;font-size:12px;color:var(--muted);
+  backdrop-filter:blur(6px);flex-wrap:wrap;
+}
+.ext-frame-note button{
+  background:var(--primary);color:var(--primary-ink);border:none;
+  border-radius:999px;padding:6px 12px;font-size:11.5px;font-weight:700;
+  cursor:pointer;flex-shrink:0;
+}
+.ext-frame-note button:hover{filter:brightness(1.1);}
+
+/* FAB */
+.fab{
+  position:fixed;left:20px;bottom:20px;z-index:6;width:48px;height:48px;border-radius:50%;
+  background:var(--surface);border:2px solid var(--primary);color:var(--primary);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 24px -8px rgba(0,0,0,.6);cursor:pointer;transition:all .15s;
+}
+.fab:hover{background:var(--surface-2);}
+.fab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+</style>
+</head>
+<body>
+
+<div class="bg-particles" id="bgParticles" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <!-- ══════════ SIDEBAR WRAPPER (for toggle button positioning) ══════════ -->
+  <div class="sidebar-wrap">
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <span>G</span><span class="logo-text" style="font-size:1rem;font-weight:600;color:var(--text);letter-spacing:.05em;text-transform:none;">alexer</span>
+      </div>
+
+      <div class="nav-item active" data-panel="home" title="Home" onclick="showPanel('home',this)">
+        <svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/><path d="M9 21V12h6v9"/></svg>
+        <span class="nav-label">Home</span>
+      </div>
+      <div class="nav-item" data-panel="play" title="Play" onclick="showPanel('play',this)">
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="8" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
+        <span class="nav-label">Play</span>
+      </div>
+      <div class="nav-item" data-panel="apps" title="Apps" onclick="showPanel('apps',this)">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span class="nav-label">Apps</span>
+      </div>
+      <div class="nav-item" data-panel="chat" title="Chat" onclick="showPanel('chat',this)">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="nav-label">Chat</span>
+      </div>
+      <div class="nav-item" data-panel="ai" title="AI" onclick="showPanel('ai',this)">
+        <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M8 8V5a4 4 0 0 1 8 0v3"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="15" y1="14" x2="15" y2="14"/><path d="M9 17c1 1 5 1 6 0"/></svg>
+        <span class="nav-label">AI</span>
+      </div>
+      <div class="nav-item" data-panel="listen" title="Listen" onclick="showPanel('listen',this)">
+        <svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+        <span class="nav-label">Listen</span>
+      </div>
+      <div class="nav-item" data-panel="watch" title="Watch" onclick="showPanel('watch',this)">
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+        <span class="nav-label">Watch</span>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <!-- Browse: clickable nav item + expandable mini-browser below it -->
+      <div class="nav-item" data-panel="browse" id="browseNavItem" title="Browse" onclick="toggleBrowseExpand(this)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span class="nav-label">Browse</span>
+        <svg id="browseChevron" viewBox="0 0 24 24" style="width:12px;height:12px;margin-left:auto;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s;"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <div class="browse-expand" id="browseExpand">
+        <div class="bexp-toolbar">
+          <button class="bexp-btn" onclick="bexpNav('back')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="bexp-btn" onclick="bexpNav('fwd')"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <button class="bexp-btn" onclick="bexpNav('reload')"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+          <input class="bexp-addr" id="bexpAddr" type="text" placeholder="Search or URL…" onkeydown="bexpGo(event)" value="https://duckduckgo.com">
+          <button class="bexp-btn" onclick="bexpNavUrl(document.getElementById('bexpAddr').value)"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+        <div class="bexp-frame-wrap">
+          <iframe id="bexpFrame" class="bexp-iframe"
+            src="https://duckduckgo.com"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+            referrerpolicy="no-referrer"
+            allow="fullscreen"
+          ></iframe>
+          <div class="bexp-blocked" id="bexpBlocked" style="display:none;">
+            <span>Site blocks iframes.</span>
+            <button onclick="window.open(document.getElementById('bexpFrame').src,'_blank','noopener')">Open ↗</button>
+            <button onclick="document.getElementById('bexpBlocked').style.display='none'">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- cloak + panic -->
+      <div class="sidebar-bottom">
+        <div class="cloak-label">Tab Cloak</div>
+        <div class="cloak-opt active" onclick="setCloak('none',this)">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+          <span class="nav-label">Off</span>
+        </div>
+        <div class="cloak-opt" onclick="setCloak('gdocs',this)">
+          <svg viewBox="0 0 24 24"><rect x="4" y="2" width="12" height="20" rx="2"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+          <span class="nav-label">Docs</span>
+        </div>
+        <div class="cloak-opt" onclick="setCloak('gclass',this)">
+          <svg viewBox="0 0 24 24"><path d="M2 3h20v14H2z"/><path d="M8 21h8M12 17v4"/></svg>
+          <span class="nav-label">Classroom</span>
+        </div>
+        <div class="cloak-opt" onclick="setCloak('khan',this)">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <span class="nav-label">Khan</span>
+        </div>
+        <button class="panic-btn" onclick="panicTab()">
+          <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0;" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="nav-label">Panic</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- sidebar collapse toggle -->
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Collapse sidebar">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  </div>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <div class="main">
+    <div class="tabstrip" id="tabstrip"></div>
+
+    <div class="toolbar">
+      <button class="tool-btn" id="backBtn" title="Back">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="tool-btn" id="fwdBtn" title="Forward">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="tool-btn" id="reloadBtn" title="Reload">
+        <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
+      <div class="addr-box">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="addrInput" placeholder="Search or enter URL…" autocomplete="off">
+      </div>
+      <button class="tool-btn" id="fullBtn" title="Fullscreen">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+      </button>
+      <button class="tool-btn" id="newTabBtn2" title="New tab">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+
+    <div class="view-area" id="viewArea"></div>
+  </div>
+</div>
+
+<button class="fab" id="fabHome" onclick="newTab()" title="New tab">
+  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+</button>
+
+<!-- ════════ TEMPLATES ════════ -->
+<template id="tmplHome">
+  <div class="view scroll">
+    <div class="home-page">
+      <p class="brand-mark">Galexer</p>
+      <form id="ddg-site-search" action="https://duckduckgo.com/" method="get" target="_blank" class="home-search" style="gap:10px;">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="search" name="q" id="ddg-query" class="hs-input" placeholder="Search DuckDuckGo or enter URL…" aria-label="Search DuckDuckGo" autocomplete="off">
+        <button type="submit" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </form>
+      <div class="quick-tiles">
+        <button class="qtile" data-url="https://www.youtube.com" data-title="YouTube">
+          <span class="qtile-icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="4"/><polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none"/></svg></span>
+          <span class="qtile-label">youtube</span>
+        </button>
+        <button class="qtile" data-url="https://github.com" data-title="GitHub">
+          <span class="qtile-icon"><svg viewBox="0 0 24 24"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 1.9 5.4 2.2 5.4 2.2a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 8.6c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></span>
+          <span class="qtile-label">github</span>
+        </button>
+        <button class="qtile" data-url="https://discord.com" data-title="Discord">
+          <span class="qtile-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="4"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>
+          <span class="qtile-label">discord</span>
+        </button>
+        <button class="qtile" data-url="https://x.com" data-title="X">
+          <span class="qtile-icon"><svg viewBox="0 0 24 24"><line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/></svg></span>
+          <span class="qtile-label">twitter</span>
+        </button>
+        <button class="qtile" data-url="https://reddit.com" data-title="Reddit">
+          <span class="qtile-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><circle cx="9" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1" fill="currentColor" stroke="none"/><path d="M9 17c1 .7 4 .7 5 0"/><circle cx="18" cy="7.5" r="1.5"/><path d="M12 6V3"/></svg></span>
+          <span class="qtile-label">reddit</span>
+        </button>
+        <button class="qtile" data-url="https://www.instagram.com" data-title="Instagram">
+          <span class="qtile-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".5" fill="currentColor" stroke="none"/></svg></span>
+          <span class="qtile-label">instagram</span>
+        </button>
+      </div>
+      <div class="signature">
+        <div class="sig-line-wrap"><span class="sig-line"></span></div>
+        <p class="sig-text">Made by Noah</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tmplPlay">
+  <div class="view" style="position:relative;overflow:hidden;">
+    <div class="games-page" id="gamesPage">
+      <div class="games-header">
+        <span class="games-title">🎮 Games</span>
+        <span class="games-count" id="zonesCount">501 games</span>
+        <input class="games-search" id="zonesSearch" type="text" placeholder="Search 501 games…" autocomplete="off">
+        <select class="games-sort" id="zonesGenre">
+          <option value="all">all genres</option>
+          <option value="adventure">adventure</option>
+          <option value="arcade">arcade</option>
+          <option value="mobile">mobile</option>
+          <option value="platformer">platformer</option>
+          <option value="puzzle">puzzle</option>
+          <option value="simulation">simulation</option>
+        </select>
+      </div>
+      <div class="zone-grid-wrap">
+        <div class="zone-grid" id="zoneGrid"></div>
+      </div>
+    </div>
+    <div class="zone-viewer" id="zoneViewer">
+      <div class="zone-top">
+        <button class="zone-action" onclick="closeZoneViewer()">← Back</button>
+        <span class="zone-top-title" id="zvName"></span>
+        <span class="zone-top-sub" id="zvGenre"></span>
+        <button class="zone-action" onclick="zvNewTab()">New Tab</button>
+        <button class="zone-action primary" onclick="zvFullscreen()">Fullscreen</button>
+      </div>
+      <iframe class="zone-iframe" id="zoneIframe" allow="fullscreen; autoplay; pointer-lock"></iframe>
+    </div>
+  </div>
+</template>
+
+<template id="tmplGeneric">
+  <div class="view scroll">
+    <div class="panel-page" id="genericContent"></div>
+  </div>
+</template>
+
+<script>
+/* ═══ PARTICLES (original style) ═══ */
+(function(){
+  const f=document.getElementById('bgParticles');
+  const count=22;
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const size=3+Math.random()*6;
+    const left=Math.random()*100;
+    const dur=14+Math.random()*16;
+    const delay=-Math.random()*dur;
+    const drift=(Math.random()*80-40).toFixed(0)+'px';
+    p.style.cssText=`width:${size}px;height:${size}px;left:${left}%;--drift:${drift};animation-duration:${dur}s;animation-delay:${delay}s;`;
+    f.appendChild(p);
+  }
+})();
+
+/* ═══ SIDEBAR TOGGLE ═══ */
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+}
+
+/* ═══ BROWSE EXPAND (inline mini-browser in sidebar) ═══ */
+let browseOpen=false;
+function toggleBrowseExpand(navEl){
+  browseOpen=!browseOpen;
+  const exp=document.getElementById('browseExpand');
+  const chev=document.getElementById('browseChevron');
+  exp.classList.toggle('open',browseOpen);
+  chev.style.transform=browseOpen?'rotate(180deg)':'rotate(0deg)';
+  // also mark nav active
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  navEl.classList.add('active');
+}
+function bexpNav(dir){
+  const f=document.getElementById('bexpFrame');if(!f)return;
+  try{
+    if(dir==='back')f.contentWindow.history.back();
+    else if(dir==='fwd')f.contentWindow.history.forward();
+    else{f.src=f.src;}
+  }catch(e){}
+}
+function bexpGo(e){
+  if(e.key==='Enter')bexpNavUrl(e.target.value);
+}
+function bexpNavUrl(raw){
+  let url=raw.trim();if(!url)return;
+  if(!looksUrl(url))url='https://duckduckgo.com/?q='+encodeURIComponent(url);
+  else if(!/^https?:\/\//i.test(url))url='https://'+url;
+  const f=document.getElementById('bexpFrame');
+  const addr=document.getElementById('bexpAddr');
+  if(f)f.src=url;
+  if(addr)addr.value=url;
+}
+document.getElementById('bexpFrame').addEventListener('load',function(){
+  try{
+    const loc=this.contentWindow?.location?.href;
+    const addr=document.getElementById('bexpAddr');
+    if(loc&&loc!=='about:blank'&&addr)addr.value=loc;
+  }catch(e){}
+});
+
+/* ═══ CLOAK + PANIC ═══ */
+const CLOAKS={
+  none:{title:'Galexer',fav:''},
+  gdocs:{title:'Untitled document – Google Docs',fav:'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico'},
+  gclass:{title:'Classes – Google Classroom',fav:'https://ssl.gstatic.com/classroom/favicon.png'},
+  khan:{title:'Khan Academy | Free Online Courses',fav:'https://cdn.kastatic.org/images/favicon.ico'},
+};
+let cloakLink=null;
+function setCloak(k,el){
+  document.querySelectorAll('.cloak-opt').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  const c=CLOAKS[k];
+  document.title=c.title;
+  if(!cloakLink){cloakLink=document.createElement('link');cloakLink.rel='icon';document.head.appendChild(cloakLink);}
+  cloakLink.href=c.fav;
+}
+function panicTab(){
+  document.title='Classes – Google Classroom';
+  window.location.replace('https://classroom.google.com');
+}
+
+/* ═══ TAB ENGINE ═══ */
+let seq=1,tabs=[],activeId=null;
+
+function looksUrl(s){
+  if(/^https?:\/\//i.test(s))return true;
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?(\/[^\s]*)?$/i.test(s)&&!s.includes(' ');
+}
+function resolveUrl(raw){
+  const q=raw.trim();if(!q)return null;
+  if(looksUrl(q)){
+    const url=/^https?:\/\//i.test(q)?q:'https://'+q;
+    let lbl;try{lbl=new URL(url).hostname.replace(/^www\./,'');}catch(e){lbl=q;}
+    return{url,title:lbl};
+  }
+  return{url:'https://duckduckgo.com/?q='+encodeURIComponent(q),title:q};
+}
+function newTab(dest){
+  const tab={id:seq++,title:dest?dest.title:'New Tab',url:dest?dest.url:null,panel:'home'};
+  tabs.push(tab);activeId=tab.id;renderTabs();renderView();
+}
+function closeTab(id){
+  const i=tabs.findIndex(t=>t.id===id);if(i===-1)return;
+  tabs.splice(i,1);
+  if(!tabs.length){newTab();return;}
+  if(activeId===id)activeId=(tabs[i]||tabs[i-1]).id;
+  renderTabs();renderView();
+}
+function switchTab(id){activeId=id;renderTabs();renderView();}
+function activeTab(){return tabs.find(t=>t.id===activeId);}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function renderTabs(){
+  const strip=document.getElementById('tabstrip');
+  strip.innerHTML=tabs.map(t=>`
+    <div class="tab${t.id===activeId?' active':''}" onclick="switchTab(${t.id})">
+      <span class="tab-title">${esc(t.title)}</span>
+      <span class="tab-close" onclick="event.stopPropagation();closeTab(${t.id})">
+        <svg style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </span>
+    </div>
+  `).join('')+`<button class="new-tab-btn" onclick="newTab()" title="New tab"><svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>`;
+}
+
+function renderView(){
+  const tab=activeTab();
+  const va=document.getElementById('viewArea');
+  va.innerHTML='';
+  if(!tab)return;
+  document.getElementById('addrInput').value=tab.url||'';
+  const bk=document.getElementById('backBtn');
+  const fw=document.getElementById('fwdBtn');
+
+  const panel=tab.panel||'url';
+
+  if(panel==='home'){
+    bk.disabled=true;fw.disabled=true;
+    renderHomeView(va);
+    document.getElementById('reloadBtn').onclick=()=>renderView();
+    return;
+  }
+  if(panel==='play'){
+    bk.disabled=true;fw.disabled=true;
+    renderPlayView(va);
+    return;
+  }
+  if(['ai','chat','listen','watch','apps'].includes(panel)){
+    bk.disabled=true;fw.disabled=true;
+    renderGenericPanel(va,tab);
+    return;
+  }
+  // external URL
+  bk.disabled=false;fw.disabled=false;
+  renderExtFrame(va,tab);
+}
+
+/* ─── home ─── */
+function renderHomeView(va){
+  const node=document.getElementById('tmplHome').content.cloneNode(true);
+  const inp=node.querySelector('.hs-input');
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){const d=resolveUrl(inp.value);if(d)navigateTo(d);}
+  });
+  node.querySelectorAll('.qtile').forEach(b=>{
+    b.addEventListener('click',()=>navigateTo({url:b.dataset.url,title:b.dataset.title}));
+  });
+  // rotating sig font
+  const FONTS=["'Inter',sans-serif","'Lora',serif","'Fira Code',monospace","'Playfair Display',serif","'Bebas Neue',sans-serif","'Pacifico',cursive","'Space Mono',monospace","'Caveat',cursive","'Righteous',sans-serif","'Cormorant Garamond',serif"];
+  let fi=Math.floor(Math.random()*FONTS.length);
+  const sl=node.querySelector('.sig-line');
+  const st=node.querySelector('.sig-text');
+  if(sl&&st){
+    st.style.fontFamily=FONTS[fi];
+    sl.addEventListener('animationiteration',()=>{fi=(fi+1)%FONTS.length;st.style.fontFamily=FONTS[fi];});
+  }
+  va.appendChild(node);
+}
+
+/* ─── external URL frame ─── */
+function renderExtFrame(va,tab){
+  const wrap=document.createElement('div');
+  wrap.className='view';wrap.style.overflow='hidden';
+  const iframe=document.createElement('iframe');
+  iframe.src=tab.url;
+  iframe.setAttribute('referrerpolicy','no-referrer');
+  iframe.style.cssText='width:100%;height:100%;border:none;display:block;';
+  wrap.appendChild(iframe);
+  const note=document.createElement('div');
+  note.className='ext-frame-note';
+  note.innerHTML=`<span>Some sites block iframes. If this looks blank, open it directly.</span><button onclick="window.open('${esc(tab.url)}','_blank','noopener')">Open directly ↗</button><button onclick="this.parentElement.style.display='none'">✕</button>`;
+  wrap.appendChild(note);
+  va.appendChild(wrap);
+  document.getElementById('reloadBtn').onclick=()=>{iframe.src=tab.url;};
+  document.getElementById('backBtn').onclick=()=>{try{iframe.contentWindow.history.back();}catch(e){}};
+  document.getElementById('fwdBtn').onclick=()=>{try{iframe.contentWindow.history.forward();}catch(e){}};
+}
+
+/* ─── generic panels ─── */
+const PANEL_META={
+  ai:{svgPath:'<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M8 8V5a4 4 0 0 1 8 0v3"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="15" y1="14" x2="15" y2="14"/><path d="M9 17c1 1 5 1 6 0"/>',title:'AI Assistant',body:'Chat with AI right in your browser.',url:'https://claude.ai',label:'Open Claude'},
+  chat:{svgPath:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',title:'Chat',body:'Jump into Discord, Slack or WhatsApp.',url:'https://discord.com',label:'Open Discord'},
+  listen:{svgPath:'<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>',title:'Listen',body:'Stream music and podcasts.',url:'https://open.spotify.com',label:'Open Spotify'},
+  watch:{svgPath:'<rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/>',title:'Watch',body:'Watch videos and streams.',url:'https://www.youtube.com',label:'Open YouTube'},
+  apps:{svgPath:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',title:'Apps',body:'Access web apps and tools.',url:'https://www.notion.so',label:'Open Notion'},
+};
+function renderGenericPanel(va,tab){
+  const node=document.getElementById('tmplGeneric').content.cloneNode(true);
+  va.appendChild(node);
+  const m=PANEL_META[tab.panel]||{svgPath:'',title:tab.panel,body:'',url:'',label:''};
+  const c=document.getElementById('genericContent');
+  if(!c)return;
+  c.innerHTML=`
+    <svg viewBox="0 0 24 24" style="width:52px;height:52px;stroke:var(--primary);fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;">${m.svgPath}</svg>
+    <h2>${m.title}</h2><p>${m.body}</p>
+    ${m.url?`<button class="panel-launch" onclick="navigateTo({url:'${m.url}',title:'${m.title}'})">${m.label}</button>`:''}
+  `;
+}
+
+/* ═══ PANEL SWITCHING ═══ */
+function showPanel(panel,el){
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  const tab=activeTab();if(!tab)return;
+  if(panel==='home'){tab.url=null;tab.panel='home';tab.title='New Tab';}
+  else if(panel==='play'){tab.url='play';tab.panel='play';tab.title='Play';}
+  else{tab.url=panel;tab.panel=panel;tab.title=panel.charAt(0).toUpperCase()+panel.slice(1);}
+  renderTabs();renderView();
+  document.getElementById('addrInput').value=tab.url||'';
+}
+function navigateTo(dest){
+  const tab=activeTab();if(!tab||!dest)return;
+  tab.url=dest.url;tab.title=dest.title;tab.panel=undefined;
+  renderTabs();renderView();
+}
+
+/* ═══ GAMES (Seraph — 501 games from a456pur/seraph) ═══ */
+const SERAPH_GAMES = [{"name":"slope","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/slope.jpg","url":"https://a456pur.github.io/seraph/games/slope/index.html"},{"name":"subway surfers","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/subwaysurfers.jpeg","url":"https://a456pur.github.io/seraph/games/subwaysurfers/index.html"},{"name":"flappy bird","genre":"mobile","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/flappybird.jpg","url":"https://a456pur.github.io/seraph/games/flappy/index.html"},{"name":"papa's pizzaria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papaspizzeria.jpg","url":"https://a456pur.github.io/seraph/games/papaspizzaria/index.html"},{"name":"papa's burgeria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papasburgeria.jpg","url":"https://a456pur.github.io/seraph/games/papasburgeria/index.html"},{"name":"super mario 64","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sm64.jpg","url":"https://a456pur.github.io/seraph/games/sm64/index.html"},{"name":"run 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/run3.jpg","url":"https://a456pur.github.io/seraph/games/run3/index.html"},{"name":"bitlife","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bitlife.jpg","url":"https://a456pur.github.io/seraph/games/bitlife/index.html"},{"name":"crossy road","genre":"mobile","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/crossyroad.jpg","url":"https://a456pur.github.io/seraph/games/crossy/index.html"},{"name":"minecraft [v1.5.2]","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mc.jpg","url":"https://a456pur.github.io/seraph/games/mc/index.html"},{"name":"cookie clicker","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cookieclick.jpg","url":"https://a456pur.github.io/seraph/games/cookieclicker/index.html"},{"name":"temple run 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/templerun2.jpg","url":"https://a456pur.github.io/seraph/games/templerun2/index.html"},{"name":"duck life 4","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ducklife4.jpg","url":"https://a456pur.github.io/seraph/games/ducklife4/index.html"},{"name":"chrome dino game","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/chromedino.jpg","url":"https://a456pur.github.io/seraph/games/dinogame/index.html"},{"name":"jetpack joyride","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/jetpackjoyride.jpg","url":"https://a456pur.github.io/seraph/games/jetpackjoyride/index.html"},{"name":"retro bowl","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/retrobowl.jpg","url":"https://a456pur.github.io/seraph/games/retrobowl/index.html"},{"name":"fruit ninja","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fruitninja.jpg","url":"https://a456pur.github.io/seraph/games/fruitninja/index.html"},{"name":"doodle jump","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/doodlejump.jpg","url":"https://a456pur.github.io/seraph/games/doodlejump/index.html"},{"name":"2048","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/2048.jpg","url":"https://a456pur.github.io/seraph/games/2048/index.html"},{"name":"tetris","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/tetris.jpg","url":"https://a456pur.github.io/seraph/games/tetris/index.html"},{"name":"fancy pants adventure","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fancypantsadventure.jpg","url":"https://a456pur.github.io/seraph/games/fancypantsadventure/index.html"},{"name":"happy wheels","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/happywheels.jpg","url":"https://a456pur.github.io/seraph/games/happywheels/index.html"},{"name":"papa's hotdoggeria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papashotdoggeria.jpg","url":"https://a456pur.github.io/seraph/games/papashotdoggeria/index.html"},{"name":"paperio2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/paperio2.jpg","url":"https://a456pur.github.io/seraph/games/paperio2/index.html"},{"name":"super hot","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/superhot.jpg","url":"https://a456pur.github.io/seraph/games/superhot/index.html"},{"name":"the binding of isaac","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/thebindingofisaac.jpg","url":"https://a456pur.github.io/seraph/games/thebindingofisaac/index.html"},{"name":"townscaper","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/townscaper.jpg","url":"https://a456pur.github.io/seraph/games/townscaper/index.html"},{"name":"tunnel rush","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/tunnelrush.jpg","url":"https://a456pur.github.io/seraph/games/tunnelrush/index.html"},{"name":"theme hotel","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/themehotel.jpg","url":"https://a456pur.github.io/seraph/games/themehotel/index.html"},{"name":"escaping the prison","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/escapingtheprison.jpg","url":"https://a456pur.github.io/seraph/games/escapingtheprison/index.html"},{"name":"stealing the diamond","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stealingthediamond.jpg","url":"https://a456pur.github.io/seraph/games/stealingthediamond/index.html"},{"name":"infiltrating the airship","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/infiltratingtheairship.jpg","url":"https://a456pur.github.io/seraph/games/infiltratingtheairship/index.html"},{"name":"fleeing the complex","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fleeingthecomplex.jpg","url":"https://a456pur.github.io/seraph/games/fleeingthecomplex/index.html"},{"name":"the impossible quiz","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/theimpossiblequiz.jpg","url":"https://a456pur.github.io/seraph/games/theimpossiblequiz/index.html"},{"name":"solitaire","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/solitaire.jpg","url":"https://a456pur.github.io/seraph/games/solitaire/index.html"},{"name":"drift hunters","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/drifthunters.jpg","url":"https://a456pur.github.io/seraph/games/drifthunters/index.html"},{"name":"vex 6","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/vex6.jpg","url":"https://a456pur.github.io/seraph/games/vex6/index.html"},{"name":"among us fangame","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/amongus.jpg","url":"https://a456pur.github.io/seraph/games/amongus/index.html"},{"name":"edge surf","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/surf.jpg","url":"https://a456pur.github.io/seraph/games/surf/index.html"},{"name":"motox3m","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/motox3m.jpeg","url":"https://a456pur.github.io/seraph/games/motox3m/index.html"},{"name":"fnaf 1","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fnaf.jpg","url":"https://a456pur.github.io/seraph/games/fnaf/index.html"},{"name":"fnaf 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fnaf2.jpg","url":"https://a456pur.github.io/seraph/games/fnaf-2/index.html"},{"name":"fnaf 3","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fnaf3.jpg","url":"https://a456pur.github.io/seraph/games/fnaf-3/index.html"},{"name":"fnaf 4","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fnaf4.jpg","url":"https://a456pur.github.io/seraph/games/fnaf-4/index.html"},{"name":"riddle school","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/riddleschool.jpg","url":"https://a456pur.github.io/seraph/games/riddleschool/riddleschool1/index.html"},{"name":"riddle school 2","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/riddleschool2.jpg","url":"https://a456pur.github.io/seraph/games/riddleschool/riddleschool2/index.html"},{"name":"riddle school 3","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/riddleschool3.jpg","url":"https://a456pur.github.io/seraph/games/riddleschool/riddleschool3/index.html"},{"name":"riddle school 4","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/riddleschool4.jpg","url":"https://a456pur.github.io/seraph/games/riddleschool/riddleschool4/index.html"},{"name":"riddle school 5","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/riddleschool5.jpg","url":"https://a456pur.github.io/seraph/games/riddleschool/riddleschool5/index.html"},{"name":"riddle transfer","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/riddletransfer.jpg","url":"https://a456pur.github.io/seraph/games/riddleschool/riddletransfer/index.html"},{"name":"riddle transfer 2","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/riddletransfer2.jpg","url":"https://a456pur.github.io/seraph/games/riddleschool/riddletransfer2/index.html"},{"name":"drift boss","genre":"mobile","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/driftboss.jpg","url":"https://a456pur.github.io/seraph/games/driftboss/index.html"},{"name":"friday night funkin","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fnf.jpg","url":"https://a456pur.github.io/seraph/games/fnf/index.html"},{"name":"pacman","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pacman.jpg","url":"https://a456pur.github.io/seraph/games/pacman/index.html"},{"name":"papa's pancakeria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papaspancakeria.jpg","url":"https://a456pur.github.io/seraph/games/papaspancakeria/index.html"},{"name":"rooftop snipers","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/rooftopsnipers.jpg","url":"https://a456pur.github.io/seraph/games/rooftop/index.html"},{"name":"baldi's basics","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/baldisbasics.jpg","url":"https://a456pur.github.io/seraph/games/baldisbasics/index.html"},{"name":"bob the robber 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bobtherobber2.jpg","url":"https://a456pur.github.io/seraph/games/bobtherobber2/index.html"},{"name":"minesweeper","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/minesweeper.jpg","url":"https://a456pur.github.io/seraph/games/minesweeper/index.html"},{"name":"pokemon emerald","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonemerald.jpg","url":"https://a456pur.github.io/seraph/games/pokemonemerald/index.html"},{"name":"pokemon fire red","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonfirered.jpg","url":"https://a456pur.github.io/seraph/games/pokemonfirered/index.html"},{"name":"super mario bros","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermariobros.jpg","url":"https://a456pur.github.io/seraph/games/supermariobros/index.html"},{"name":"super mario kart","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermariokart.jpg","url":"https://a456pur.github.io/seraph/games/supermariokart/index.html"},{"name":"super mario world","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermarioworld.jpg","url":"https://a456pur.github.io/seraph/games/supermarioworld/index.html"},{"name":"there is no game","genre":"mobile","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/thereisnogame.jpg","url":"https://a456pur.github.io/seraph/games/thereisnogame/index.html"},{"name":"world's hardest game","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/worldshardestgame.jpg","url":"https://a456pur.github.io/seraph/games/worldshardestgame/index.html"},{"name":"castlevania","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/castlevania.jpg","url":"https://a456pur.github.io/seraph/games/castlevania/index.html"},{"name":"donkey kong","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/donkeykong.jpg","url":"https://a456pur.github.io/seraph/games/donkeykong/index.html"},{"name":"dr mario","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/drmario.jpg","url":"https://a456pur.github.io/seraph/games/drmario/index.html"},{"name":"metroid","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/metroid.jpg","url":"https://a456pur.github.io/seraph/games/metroid/index.html"},{"name":"super mario bros 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermariobros2.jpg","url":"https://a456pur.github.io/seraph/games/supermariobros2/index.html"},{"name":"super mario bros 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermariobros3.jpg","url":"https://a456pur.github.io/seraph/games/supermariobros3/index.html"},{"name":"the legend of zelda","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/thelegendofzelda.jpg","url":"https://a456pur.github.io/seraph/games/thelegendofzelda/index.html"},{"name":"warioware","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/warioware.jpg","url":"https://a456pur.github.io/seraph/games/warioware/index.html"},{"name":"yoshi's island","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/yoshisisland.jpg","url":"https://a456pur.github.io/seraph/games/yoshisisland/index.html"},{"name":"donkey kong land","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/donkeykongland.jpg","url":"https://a456pur.github.io/seraph/games/donkeykongland/index.html"},{"name":"kirby's dream land","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/kirbysdreamland.jpg","url":"https://a456pur.github.io/seraph/games/kirbysdreamland/index.html"},{"name":"super mario land","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermarioland.jpg","url":"https://a456pur.github.io/seraph/games/supermarioland/index.html"},{"name":"doge miner","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/dogeminer.jpg","url":"https://a456pur.github.io/seraph/games/dogeminer/index.html"},{"name":"tanuki sunset","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/tanukisunset.jpg","url":"https://a456pur.github.io/seraph/games/tanukisunset/index.html"},{"name":"aquapark slides","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/aquaparkslides.jpg","url":"https://a456pur.github.io/seraph/games/aquaparkslides/index.html"},{"name":"color switch","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/colorswitch.jpg","url":"https://a456pur.github.io/seraph/games/colorswitch/index.html"},{"name":"papa's freezeria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papasfreezeria.jpg","url":"https://a456pur.github.io/seraph/games/papasfreezeria/index.html"},{"name":"btd","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/btd.jpg","url":"https://a456pur.github.io/seraph/games/btd/btd/index.html"},{"name":"btd 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/btd2.jpg","url":"https://a456pur.github.io/seraph/games/btd/btd2/index.html"},{"name":"btd 3","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/btd3.jpg","url":"https://a456pur.github.io/seraph/games/btd/btd3/index.html"},{"name":"btd 4","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/btd4.jpg","url":"https://a456pur.github.io/seraph/games/btd/btd4/index.html"},{"name":"bomberman","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bomberman.jpg","url":"https://a456pur.github.io/seraph/games/bomberman/index.html"},{"name":"fire emblem","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fireemblem.jpg","url":"https://a456pur.github.io/seraph/games/fireemblem/index.html"},{"name":"ice climber","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/iceclimber.jpg","url":"https://a456pur.github.io/seraph/games/iceclimber/index.html"},{"name":"mario kart super circuit","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariokartsupercircuit.jpg","url":"https://a456pur.github.io/seraph/games/mariokartsupercircuit/index.html"},{"name":"pokemon leaf green","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonleafgreen.jpg","url":"https://a456pur.github.io/seraph/games/pokemonleafgreen/index.html"},{"name":"pokemon ruby","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonruby.jpg","url":"https://a456pur.github.io/seraph/games/pokemonruby/index.html"},{"name":"pokemon sapphire","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonsapphire.jpg","url":"https://a456pur.github.io/seraph/games/pokemonsapphire/index.html"},{"name":"superstar saga","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/superstarsaga.jpg","url":"https://a456pur.github.io/seraph/games/superstarsaga/index.html"},{"name":"adofai","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/adofai.jpg","url":"https://a456pur.github.io/seraph/games/adofai/index.html"},{"name":"super smash flash","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supersmashflash.jpg","url":"https://a456pur.github.io/seraph/games/supersmashflash/index.html"},{"name":"super meat boy","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermeatboy.jpg","url":"https://a456pur.github.io/seraph/games/supermeatboy/index.html"},{"name":"stickman hook","genre":"mobile","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stickmanhook.jpg","url":"https://a456pur.github.io/seraph/games/stickmanhook/index.html"},{"name":"defend the tank","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/defendthetank.jpg","url":"https://a456pur.github.io/seraph/games/defendthetank/index.html"},{"name":"sort the court","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sortthecourt.jpg","url":"https://a456pur.github.io/seraph/games/sortthecourt/index.html"},{"name":"this is the only level","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/thisistheonlylevel.jpg","url":"https://a456pur.github.io/seraph/games/thisistheonlylevel/index.html"},{"name":"run","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/run.jpg","url":"https://a456pur.github.io/seraph/games/run/index.html"},{"name":"run 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/run2.jpg","url":"https://a456pur.github.io/seraph/games/run2/index.html"},{"name":"battleships","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/battleships.jpg","url":"https://a456pur.github.io/seraph/games/battleships/index.html"},{"name":"breaking the bank","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/breakingthebank.jpg","url":"https://a456pur.github.io/seraph/games/breakingthebank/index.html"},{"name":"duck life","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ducklife.jpg","url":"https://a456pur.github.io/seraph/games/ducklife/index.html"},{"name":"duck life 2","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ducklife2.jpg","url":"https://a456pur.github.io/seraph/games/ducklife2/index.html"},{"name":"duck life 3","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ducklife3.jpg","url":"https://a456pur.github.io/seraph/games/ducklife3/index.html"},{"name":"line rider","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/linerider.jpg","url":"https://a456pur.github.io/seraph/games/linerider/index.html"},{"name":"mario combat","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariocombat.jpg","url":"https://a456pur.github.io/seraph/games/mariocombat/index.html"},{"name":"raft wars 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/raftwars2.jpg","url":"https://a456pur.github.io/seraph/games/raftwars2/index.html"},{"name":"space invaders","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/spaceinvaders.jpg","url":"https://a456pur.github.io/seraph/games/spaceinvaders/index.html"},{"name":"animal crossing","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/animalcrossingwildworld.jpg","url":"https://a456pur.github.io/seraph/games/animalcrossingwildworld/index.html"},{"name":"mario kart ds","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariokartds.jpg","url":"https://a456pur.github.io/seraph/games/mariokartds/index.html"},{"name":"new super mario bros","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/newsupermariobros.jpg","url":"https://a456pur.github.io/seraph/games/newsupermariobros/index.html"},{"name":"nintendogs","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/nintendogs.jpg","url":"https://a456pur.github.io/seraph/games/nintendogs/index.html"},{"name":"super mario 64 ds","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sm64ds.jpg","url":"https://a456pur.github.io/seraph/games/sm64ds/index.html"},{"name":"gun mayhem","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/gunmayhem.jpg","url":"https://a456pur.github.io/seraph/games/gunmayhem/index.html"},{"name":"learn to fly","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/learntofly.jpg","url":"https://a456pur.github.io/seraph/games/learntofly/index.html"},{"name":"rooftop snipers 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/rooftopsnipers2.jpg","url":"https://a456pur.github.io/seraph/games/rooftop2/index.html"},{"name":"fireboy and watergirl","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fireboyandwatergirl.jpg","url":"https://a456pur.github.io/seraph/games/fireboywatergirl/index.html"},{"name":"chibi knight","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/chibiknight.jpg","url":"https://a456pur.github.io/seraph/games/chibiknight/index.html"},{"name":"cluster rush","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/clusterrush.jpg","url":"https://a456pur.github.io/seraph/games/clusterrush/index.html"},{"name":"doodle defender","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/doodledefender.jpg","url":"https://a456pur.github.io/seraph/games/doodledefender/index.html"},{"name":"learn to fly 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/learntofly2.jpg","url":"https://a456pur.github.io/seraph/games/learntofly2/index.html"},{"name":"papa's scooperia","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papasscooperia.jpg","url":"https://a456pur.github.io/seraph/games/papasscooperia/index.html"},{"name":"papa's sushiria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papaswingeria.jpg","url":"https://a456pur.github.io/seraph/games/papassushiria/index.html"},{"name":"papa's wingeria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papassushiria.jpg","url":"https://a456pur.github.io/seraph/games/papaswingeria/index.html"},{"name":"raft wars","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/raftwars.jpg","url":"https://a456pur.github.io/seraph/games/raftwars/index.html"},{"name":"unfair mario","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/unfairmario.jpg","url":"https://a456pur.github.io/seraph/games/unfairmario/index.html"},{"name":"boxing physics 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/boxingphysics2.jpg","url":"https://a456pur.github.io/seraph/games/boxingphysics2/index.html"},{"name":"ace attorney","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/aceattorney.jpg","url":"https://a456pur.github.io/seraph/games/aceattorney/index.html"},{"name":"metal gear solid","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/metalgearsolid.jpg","url":"https://a456pur.github.io/seraph/games/metalgearsolid/index.html"},{"name":"mother 3","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mother3.jpg","url":"https://a456pur.github.io/seraph/games/mother3/index.html"},{"name":"pokemon diamond","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemondiamond.jpg","url":"https://a456pur.github.io/seraph/games/pokemondiamond/index.html"},{"name":"pokemon platinum","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonplatinum.jpg","url":"https://a456pur.github.io/seraph/games/pokemonplatinum/index.html"},{"name":"pokemon soulsilver","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonsoulsilver.jpg","url":"https://a456pur.github.io/seraph/games/pokemonsoulsilver/index.html"},{"name":"advance wars","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/advancewars.jpg","url":"https://a456pur.github.io/seraph/games/advancewars/index.html"},{"name":"banjo pilot","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/banjopilot.jpg","url":"https://a456pur.github.io/seraph/games/banjopilot/index.html"},{"name":"super monkey ball jr","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermonkeyballjr.jpg","url":"https://a456pur.github.io/seraph/games/supermonkeyballjr/index.html"},{"name":"the impossible quiz 2","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/theimpossiblequiz2.jpg","url":"https://a456pur.github.io/seraph/games/theimpossiblequiz2/index.html"},{"name":"papa's donuteria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papasdonuteria.jpg","url":"https://a456pur.github.io/seraph/games/papasdonuteria/index.html"},{"name":"fancy pants adventure 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fancypantsadventure2.jpg","url":"https://a456pur.github.io/seraph/games/fancypantsadventure2/index.html"},{"name":"tiny fishing","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/tinyfishing.jpg","url":"https://a456pur.github.io/seraph/games/tinyfishing/index.html"},{"name":"big red button","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bigredbutton.jpg","url":"https://a456pur.github.io/seraph/games/bigredbutton/index.html"},{"name":"achievement unlocked","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/achievementunlocked.jpg","url":"https://a456pur.github.io/seraph/games/achievementunlocked/index.html"},{"name":"kirby mass attack","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/kirbymassattack.jpg","url":"https://a456pur.github.io/seraph/games/kirbymassattack/index.html"},{"name":"sonic advance","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sonicadvance.jpg","url":"https://a456pur.github.io/seraph/games/sonicadvance/index.html"},{"name":"worms world party","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/wormsworldparty.jpg","url":"https://a456pur.github.io/seraph/games/wormsworldparty/index.html"},{"name":"bad ice cream","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/badicecream.jpg","url":"https://a456pur.github.io/seraph/games/badicecream/index.html"},{"name":"bad ice cream 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/badicecream2.jpg","url":"https://a456pur.github.io/seraph/games/badicecream2/index.html"},{"name":"bad ice cream 3","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/badicecream3.jpg","url":"https://a456pur.github.io/seraph/games/badicecream3/index.html"},{"name":"adventure captialist","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/adventurecaptialist.jpg","url":"https://a456pur.github.io/seraph/games/adventurecapitalist/index.html"},{"name":"monkey mart","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/monkeymart.jpg","url":"https://a456pur.github.io/seraph/games/monkeymart/index.html"},{"name":"doom 64","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/doom64.jpg","url":"https://a456pur.github.io/seraph/games/doom64/index.html"},{"name":"banjo kazooie","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/banjokazooie.jpg","url":"https://a456pur.github.io/seraph/games/banjokazooie/index.html"},{"name":"donkey kong 64","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/donkeykong64.jpg","url":"https://a456pur.github.io/seraph/games/donkeykong64/index.html"},{"name":"f-zero x","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fzerox.jpg","url":"https://a456pur.github.io/seraph/games/fzerox/index.html"},{"name":"kirby 64","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/kirby64.jpg","url":"https://a456pur.github.io/seraph/games/kirby64/index.html"},{"name":"mario kart 64","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariokart64.jpg","url":"https://a456pur.github.io/seraph/games/mariokart64/index.html"},{"name":"mario party","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/marioparty.jpg","url":"https://a456pur.github.io/seraph/games/marioparty/index.html"},{"name":"mario party 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/marioparty2.jpg","url":"https://a456pur.github.io/seraph/games/marioparty2/index.html"},{"name":"ocarina of time","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ocarinaoftime.jpg","url":"https://a456pur.github.io/seraph/games/ocarinaoftime/index.html"},{"name":"star fox 64","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/starfox64.jpg","url":"https://a456pur.github.io/seraph/games/starfox64/index.html"},{"name":"super smash bros","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supersmashbros.jpg","url":"https://a456pur.github.io/seraph/games/supersmashbros/index.html"},{"name":"street fighter 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/streetfighter2.jpg","url":"https://a456pur.github.io/seraph/games/streetfighter2/index.html"},{"name":"getaway shootout","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/getawayshootout.jpg","url":"https://a456pur.github.io/seraph/games/getawayshootout/index.html"},{"name":"rabbit samurai","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/rabbitsamurai.jpg","url":"https://a456pur.github.io/seraph/games/rabbitsamurai/index.html"},{"name":"mario party ds","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariopartyds.jpg","url":"https://a456pur.github.io/seraph/games/mariopartyds/index.html"},{"name":"professor layton","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/professorlayton.jpg","url":"https://a456pur.github.io/seraph/games/professorlayton/index.html"},{"name":"scribblenauts","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/scribblenauts.jpg","url":"https://a456pur.github.io/seraph/games/scribblenauts/index.html"},{"name":"advance wars 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/advancewars2.jpg","url":"https://a456pur.github.io/seraph/games/advancewars2/index.html"},{"name":"harvest moon","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/harvestmoon.jpg","url":"https://a456pur.github.io/seraph/games/harvestmoon/index.html"},{"name":"mario tennis","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariotennis.jpg","url":"https://a456pur.github.io/seraph/games/mariotennis/index.html"},{"name":"mega man zero","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/megamanzero.jpg","url":"https://a456pur.github.io/seraph/games/megamanzero/index.html"},{"name":"mystery dungeon","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonmysterydungeon.jpg","url":"https://a456pur.github.io/seraph/games/pokemonmysterydungeon/index.html"},{"name":"pokemon unbound","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonunbound.jpg","url":"https://a456pur.github.io/seraph/games/pokemonunbound/index.html"},{"name":"papa's cheeseria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papascheeseria.jpg","url":"https://a456pur.github.io/seraph/games/papascheeseria/index.html"},{"name":"papa's cupcakeria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papascupcakeria.jpg","url":"https://a456pur.github.io/seraph/games/papascupcakeria/index.html"},{"name":"papa's bakeria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papasbakeria.jpg","url":"https://a456pur.github.io/seraph/games/papasbakeria/index.html"},{"name":"papa's pastaria","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papaspastaria.jpg","url":"https://a456pur.github.io/seraph/games/papaspastaria/index.html"},{"name":"gun mayhem 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/gunmayhem2.jpg","url":"https://a456pur.github.io/seraph/games/gunmayhem2/index.html"},{"name":"gun mayhem redux","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/gunmayhemredux.jpg","url":"https://a456pur.github.io/seraph/games/gunmayhemredux/index.html"},{"name":"achievement unlocked 2","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/achievementunlocked2.jpg","url":"https://a456pur.github.io/seraph/games/achievementunlocked2/index.html"},{"name":"achievement unlocked 3","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/achievementunlocked3.jpg","url":"https://a456pur.github.io/seraph/games/achievementunlocked3/index.html"},{"name":"factory balls","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/factoryballs.jpg","url":"https://a456pur.github.io/seraph/games/factoryballs/index.html"},{"name":"skywire","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/skywire.jpg","url":"https://a456pur.github.io/seraph/games/skywire/index.html"},{"name":"super mario flash","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermarioflash.jpg","url":"https://a456pur.github.io/seraph/games/supermarioflash/index.html"},{"name":"golden sun","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/goldensun.jpg","url":"https://a456pur.github.io/seraph/games/goldensun/index.html"},{"name":"metroid fusion","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/metroidfusion.jpg","url":"https://a456pur.github.io/seraph/games/metroidfusion/index.html"},{"name":"dbz: supersonic warriors","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/goldensun.jpg","url":"https://a456pur.github.io/seraph/games/dbzsupersonicwarriors/index.html"},{"name":"wario land 4","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/warioland4.jpg","url":"https://a456pur.github.io/seraph/games/warioland4/index.html"},{"name":"duck life 5","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ducklife5.jpg","url":"https://a456pur.github.io/seraph/games/ducklife5/index.html"},{"name":"learn to fly 3","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/learntofly3.jpg","url":"https://a456pur.github.io/seraph/games/learntofly3/index.html"},{"name":"bloxors","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bloxors.jpg","url":"https://a456pur.github.io/seraph/games/bloxors/index.html"},{"name":"electric man 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/electricman2.jpg","url":"https://a456pur.github.io/seraph/games/electricman2/index.html"},{"name":"portal","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/portal.jpg","url":"https://a456pur.github.io/seraph/games/portal/index.html"},{"name":"portal 2","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/portal2.jpg","url":"https://a456pur.github.io/seraph/games/portal2/index.html"},{"name":"skywire 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/skywire2.jpg","url":"https://a456pur.github.io/seraph/games/skywire2/index.html"},{"name":"duck life 6","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ducklife6.jpg","url":"https://a456pur.github.io/seraph/games/ducklife6/index.html"},{"name":"boxing random","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/boxingrandom.jpg","url":"https://a456pur.github.io/seraph/games/boxingrandom/index.html"},{"name":"cell machine","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cellmachine.jpg","url":"https://a456pur.github.io/seraph/games/cellmachine/index.html"},{"name":"stickman boost","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stickmanboost.jpg","url":"https://a456pur.github.io/seraph/games/stickmanboost/index.html"},{"name":"vex 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/vex3.jpg","url":"https://a456pur.github.io/seraph/games/vex3/index.html"},{"name":"vex 4","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/vex4.jpg","url":"https://a456pur.github.io/seraph/games/vex4/index.html"},{"name":"skibidi toilet 1v100","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/skibiditoilet1v100.jpg","url":"https://a456pur.github.io/seraph/games/skibidi1v100/index.html"},{"name":"golden eye 007","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/goldeneye007.jpg","url":"https://a456pur.github.io/seraph/games/goldeneye007/index.html"},{"name":"majora's mask","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/majorasmask.jpg","url":"https://a456pur.github.io/seraph/games/majorasmask/index.html"},{"name":"paper mario","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papermario.jpg","url":"https://a456pur.github.io/seraph/games/papermario/index.html"},{"name":"mario golf","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariogolf.jpg","url":"https://a456pur.github.io/seraph/games/mariogolf/index.html"},{"name":"pokemon stadium","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonstadium.jpg","url":"https://a456pur.github.io/seraph/games/pokemonstadium/index.html"},{"name":"excitebike 64","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/excitebike64.jpg","url":"https://a456pur.github.io/seraph/games/excitebike64/index.html"},{"name":"pokemon snap","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonsnap.jpg","url":"https://a456pur.github.io/seraph/games/pokemonsnap/index.html"},{"name":"mario party 3","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/marioparty3.jpg","url":"https://a456pur.github.io/seraph/games/marioparty3/index.html"},{"name":"sonic advance 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sonicadvance2.jpg","url":"https://a456pur.github.io/seraph/games/sonicadvance2/index.html"},{"name":"bowsers inside story","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bowsersinsidestory.jpg","url":"https://a456pur.github.io/seraph/games/bowsersinsidestory/index.html"},{"name":"spirit tracks","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/spirittracks.jpg","url":"https://a456pur.github.io/seraph/games/spirittracks/index.html"},{"name":"the sims 2","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/thesims2.jpg","url":"https://a456pur.github.io/seraph/games/thesims2/index.html"},{"name":"tetris ds","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/tetrisds.jpg","url":"https://a456pur.github.io/seraph/games/tetrisds/index.html"},{"name":"sonic rush","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sonicrush.jpg","url":"https://a456pur.github.io/seraph/games/sonicrush/index.html"},{"name":"the sims 3","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/thesims3.jpg","url":"https://a456pur.github.io/seraph/games/thesims3/index.html"},{"name":"super princess peach","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/superprincesspeach.jpg","url":"https://a456pur.github.io/seraph/games/superprincesspeach/index.html"},{"name":"lego batman","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/legobatman.jpg","url":"https://a456pur.github.io/seraph/games/legobatman/index.html"},{"name":"doom 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/doomii.jpg","url":"https://a456pur.github.io/seraph/games/doom2/index.html"},{"name":"duke nukem advance","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/dukenukemadvance.jpg","url":"https://a456pur.github.io/seraph/games/dukenukemadvance/index.html"},{"name":"mario party advance","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariopartyadvance.jpg","url":"https://a456pur.github.io/seraph/games/mariopartyadvance/index.html"},{"name":"mario pinball land","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariopinballland.jpg","url":"https://a456pur.github.io/seraph/games/mariopinballland/index.html"},{"name":"pacman world","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pacmanworld.jpg","url":"https://a456pur.github.io/seraph/games/pacmanworld/index.html"},{"name":"rayman 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/rayman3.jpg","url":"https://a456pur.github.io/seraph/games/rayman3/index.html"},{"name":"shrek 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shrek2.jpg","url":"https://a456pur.github.io/seraph/games/shrek2/index.html"},{"name":"simcity 2000","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/simcity2000.jpg","url":"https://a456pur.github.io/seraph/games/simcity/index.html"},{"name":"simpsons road rage","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/simpsonsroadrage.jpg","url":"https://a456pur.github.io/seraph/games/simpsonsroadrage/index.html"},{"name":"diddy kong racing","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/diddykongracing.jpg","url":"https://a456pur.github.io/seraph/games/diddykongracing/index.html"},{"name":"wave race 64","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/waveracing.jpg","url":"https://a456pur.github.io/seraph/games/waverace64/index.html"},{"name":"quest 64","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/quest64.jpg","url":"https://a456pur.github.io/seraph/games/quest64/index.html"},{"name":"gex 64","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/gex64.jpg","url":"https://a456pur.github.io/seraph/games/gex64/index.html"},{"name":"duke nukem 64","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/dukenukem64.jpg","url":"https://a456pur.github.io/seraph/games/dukenukem64/index.html"},{"name":"mortal kombat 4","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mortalkombat4.jpg","url":"https://a456pur.github.io/seraph/games/mortalkombat4/index.html"},{"name":"bad piggies","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/badpiggies.jpg","url":"https://a456pur.github.io/seraph/games/badpiggies/index.html"},{"name":"super mario flash 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermarioflash2.jpg","url":"https://a456pur.github.io/seraph/games/supermarioflash2/index.html"},{"name":"swords and sandals","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/swordsandsandals.jpg","url":"https://a456pur.github.io/seraph/games/swordsandsandals/index.html"},{"name":"swords and sandals 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/swordsandsandals2.jpg","url":"https://a456pur.github.io/seraph/games/swordsandsandals2/index.html"},{"name":"wordle","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/wordle.jpg","url":"https://a456pur.github.io/seraph/games/wordle/index.html"},{"name":"vex","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/vex.jpg","url":"https://a456pur.github.io/seraph/games/vex/index.html"},{"name":"vex 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/vex2.jpg","url":"https://a456pur.github.io/seraph/games/vex2/index.html"},{"name":"vex 5","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/vex5.jpg","url":"https://a456pur.github.io/seraph/games/vex5/index.html"},{"name":"vex 7","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/vex7.jpg","url":"https://a456pur.github.io/seraph/games/vex7/index.html"},{"name":"stack","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stack.jpg","url":"https://a456pur.github.io/seraph/games/stack/index.html"},{"name":"skibidi toilet attack","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/skibiditoiletattack.jpg","url":"https://a456pur.github.io/seraph/games/skibiditoiletattack/index.html"},{"name":"motox3m pool","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/motox3mpool.jpg","url":"https://a456pur.github.io/seraph/games/motox3mpool/index.html"},{"name":"offline paradise","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/offlineparadise.jpg","url":"https://a456pur.github.io/seraph/games/offlineparadise/index.html"},{"name":"link to the past","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/linktothepast.jpg","url":"https://a456pur.github.io/seraph/games/linktothepast/index.html"},{"name":"donkey kong country","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/donkeykongcountry.jpg","url":"https://a456pur.github.io/seraph/games/donkeykongcountry/index.html"},{"name":"donkey kong country 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/donkeykongcountry2.jpg","url":"https://a456pur.github.io/seraph/games/donkeykongcountry2/index.html"},{"name":"super bomberman","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/superbomberman.jpg","url":"https://a456pur.github.io/seraph/games/superbomberman/index.html"},{"name":"mario paint","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mariopaint.jpg","url":"https://a456pur.github.io/seraph/games/mariopaint/index.html"},{"name":"mega man x","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/megamanx.jpg","url":"https://a456pur.github.io/seraph/games/megamanx/index.html"},{"name":"super mario rpg","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermariorpg.jpg","url":"https://a456pur.github.io/seraph/games/supermariorpg/index.html"},{"name":"super tennis","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supertennis.jpg","url":"https://a456pur.github.io/seraph/games/supertennis/index.html"},{"name":"wario's woods","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/warioswoods.jpg","url":"https://a456pur.github.io/seraph/games/warioswoods/index.html"},{"name":"worlds hardest game 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/worldshardestgame2.jpg","url":"https://a456pur.github.io/seraph/games/worldshardestgame2/index.html"},{"name":"bubble tanks 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bubbletanks2.jpg","url":"https://a456pur.github.io/seraph/games/bubbletanks2/index.html"},{"name":"choose your weapon","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/chooseyourweapon.jpg","url":"https://a456pur.github.io/seraph/games/chooseyourweapon/index.html"},{"name":"choose your weapon 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/chooseyourweapon2.jpg","url":"https://a456pur.github.io/seraph/games/chooseyourweapon2/index.html"},{"name":"choose your weapon 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/chooseyourweapon3.jpg","url":"https://a456pur.github.io/seraph/games/chooseyourweapon3/index.html"},{"name":"connect 4","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/connect4.jpg","url":"https://a456pur.github.io/seraph/games/connect4/index.html"},{"name":"electric box","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/electricbox.jpg","url":"https://a456pur.github.io/seraph/games/electricbox/index.html"},{"name":"mc tower defence 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mctowerdefence2.jpg","url":"https://a456pur.github.io/seraph/games/mctowerdefence2/index.html"},{"name":"cars 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cars2.jpg","url":"https://a456pur.github.io/seraph/games/cars2/index.html"},{"name":"cooking mama","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cookingmama.jpg","url":"https://a456pur.github.io/seraph/games/cookingmama/index.html"},{"name":"adventure time","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/adventuretimeheyiceking.jpg","url":"https://a456pur.github.io/seraph/games/adventuretime/index.html"},{"name":"garfield gets real","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/garfieldgetsreal.jpg","url":"https://a456pur.github.io/seraph/games/garfieldgetsreal/index.html"},{"name":"warioware touched","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/wariowaretouched.jpg","url":"https://a456pur.github.io/seraph/games/wariowaretouched/index.html"},{"name":"kirby power paintbrush","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/kirbypowerpaintbrush.jpg","url":"https://a456pur.github.io/seraph/games/kirbypowerpaintbrush/index.html"},{"name":"sonic and knuckles","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sonicandknuckles.jpg","url":"https://a456pur.github.io/seraph/games/sonicandknuckles/index.html"},{"name":"altered beast","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/alteredbeast.jpg","url":"https://a456pur.github.io/seraph/games/alteredbeast/index.html"},{"name":"sonic spinball","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sonicspinball.jpg","url":"https://a456pur.github.io/seraph/games/sonicspinball/index.html"},{"name":"sonic the hedgehog 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sonicthehedgehog3.jpg","url":"https://a456pur.github.io/seraph/games/sonicthehedgehog3/index.html"},{"name":"streets of rage","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/streetsofrage.jpg","url":"https://a456pur.github.io/seraph/games/streetsofrage/index.html"},{"name":"golden axe","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/goldenaxe.jpg","url":"https://a456pur.github.io/seraph/games/goldenaxe/index.html"},{"name":"kirby amazing mirror","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/kirbyamazingmirror.jpg","url":"https://a456pur.github.io/seraph/games/kirbyamazingmirror/index.html"},{"name":"champion island","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/championisland.jpg","url":"https://a456pur.github.io/seraph/games/championisland/index.html"},{"name":"super mario construct","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermarioconstruct.jpg","url":"https://a456pur.github.io/seraph/games/supermarioconstruct/index.html"},{"name":"clicker heroes","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/clickerheroes.jpg","url":"https://a456pur.github.io/seraph/games/clickerheroes/index.html"},{"name":"stair race 3d","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stairrace3d.jpg","url":"https://a456pur.github.io/seraph/games/stairrace3d/index.html"},{"name":"slope 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/slope2.jpg","url":"https://a456pur.github.io/seraph/games/slope2/index.html"},{"name":"paper io 3d","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/paperio3d.jpg","url":"https://a456pur.github.io/seraph/games/paperio3d/index.html"},{"name":"motox3m spooky","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/motox3mspooky.jpg","url":"https://a456pur.github.io/seraph/games/motox3mspooky/index.html"},{"name":"motox3m winter","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/motox3mwinter.jpg","url":"https://a456pur.github.io/seraph/games/motox3mwinter/index.html"},{"name":"snake","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/snake.jpg","url":"https://a456pur.github.io/seraph/games/snake/index.html"},{"name":"papa's tacomia","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papastacomia.jpg","url":"https://a456pur.github.io/seraph/games/papastacomia/index.html"},{"name":"ovo","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ovo.jpg","url":"https://a456pur.github.io/seraph/games/ovo/index.html"},{"name":"knife hit","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/knifehit.jpg","url":"https://a456pur.github.io/seraph/games/knifehit/index.html"},{"name":"cubefield","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cubefield.jpg","url":"https://a456pur.github.io/seraph/games/cubefield/index.html"},{"name":"burger and frights","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/burgerandfrights.jpg","url":"https://a456pur.github.io/seraph/games/burgerandfrights/index.html"},{"name":"chess","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/chess.jpg","url":"https://a456pur.github.io/seraph/games/chess/index.html"},{"name":"fnf mid fight masses","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/midfightmasses.jpg","url":"https://a456pur.github.io/seraph/games/fnfmidfight/index.html"},{"name":"thumb fighter","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/thumbfighter.jpg","url":"https://a456pur.github.io/seraph/games/thumbfighter/index.html"},{"name":"snow battle io","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/snowbattleio.jpg","url":"https://a456pur.github.io/seraph/games/snowbattleio/index.html"},{"name":"lazy jump 3d","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/lazyjump3d.jpg","url":"https://a456pur.github.io/seraph/games/lazyjump3d/index.html"},{"name":"go ball","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/goball.jpg","url":"https://a456pur.github.io/seraph/games/goball/index.html"},{"name":"flippy fish","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/flippyfish.jpg","url":"https://a456pur.github.io/seraph/games/flippyfish/index.html"},{"name":"shop empire","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shopempire.jpg","url":"https://a456pur.github.io/seraph/games/shopempire/index.html"},{"name":"monster brawl","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/monsterbrawl.jpg","url":"https://a456pur.github.io/seraph/games/monsterbrawl/index.html"},{"name":"multitask","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/multitask.jpg","url":"https://a456pur.github.io/seraph/games/multitask/index.html"},{"name":"shift","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shift.jpg","url":"https://a456pur.github.io/seraph/games/shift/index.html"},{"name":"shift 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shift2.jpg","url":"https://a456pur.github.io/seraph/games/shift2/index.html"},{"name":"shift 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shift3.jpg","url":"https://a456pur.github.io/seraph/games/shift3/index.html"},{"name":"shift 4","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shift4.jpg","url":"https://a456pur.github.io/seraph/games/shift4/index.html"},{"name":"monopoly","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/monopoly.jpg","url":"https://a456pur.github.io/seraph/games/monopoly/index.html"},{"name":"picross ds","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/picrossds.jpg","url":"https://a456pur.github.io/seraph/games/picrossds/index.html"},{"name":"warioware diy","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/wariowarediy.jpg","url":"https://a456pur.github.io/seraph/games/wariowarediy/index.html"},{"name":"pizza tower","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pizzatower.jpg","url":"https://a456pur.github.io/seraph/games/pizzatower/index.html"},{"name":"territorial io","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/territorialio.jpg","url":"https://a456pur.github.io/seraph/games/territorialio/index.html"},{"name":"1v1lol","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/1v1lol.jpg","url":"https://a456pur.github.io/seraph/games/1v1lol/index.html"},{"name":"ballistic chickens","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ballisticchickens.jpg","url":"https://a456pur.github.io/seraph/games/ballisticchickens/index.html"},{"name":"basketbros io","genre":"mobile","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/basketbrosio.jpg","url":"https://a456pur.github.io/seraph/games/basketbrosio/index.html"},{"name":"minecraft classic","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mcclassic.jpg","url":"https://a456pur.github.io/seraph/games/mcclassic/index.html"},{"name":"death run 3d","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/deathrun3d.jpg","url":"https://a456pur.github.io/seraph/games/deathrun3d/index.html"},{"name":"soccer random","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/soccerrandom.jpg","url":"https://a456pur.github.io/seraph/games/soccerrandom/index.html"},{"name":"sprinter","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sprinter.jpg","url":"https://a456pur.github.io/seraph/games/sprinter/index.html"},{"name":"tron","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/tron.jpg","url":"https://a456pur.github.io/seraph/games/tron/index.html"},{"name":"1 on 1 soccer","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/1on1soccer.jpg","url":"https://a456pur.github.io/seraph/games/1on1soccer/index.html"},{"name":"bad time simulator","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/badtimesimulator.jpg","url":"https://a456pur.github.io/seraph/games/badtimesimulator/index.html"},{"name":"amazing rope police","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/amazingropepolice.jpg","url":"https://a456pur.github.io/seraph/games/amazingropepolice/index.html"},{"name":"celeste","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/celeste.jpg","url":"https://a456pur.github.io/seraph/games/celeste/index.html"},{"name":"just fall lol","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/justfalllol.jpg","url":"https://a456pur.github.io/seraph/games/justfalllol/index.html"},{"name":"ngon","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ngon.jpg","url":"https://a456pur.github.io/seraph/games/ngon/index.html"},{"name":"rocket soccer","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/rocketsoccer.jpg","url":"https://a456pur.github.io/seraph/games/rocketsoccer/index.html"},{"name":"stickman climb","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stickmanclimb.jpg","url":"https://a456pur.github.io/seraph/games/stickmanclimb/index.html"},{"name":"osu!mania","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/osumania.jpg","url":"https://a456pur.github.io/seraph/games/osumania/index.html"},{"name":"helix jump","genre":"mobile","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/helixjump.jpg","url":"https://a456pur.github.io/seraph/games/helixjump/index.html"},{"name":"dadish","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/dadish.jpg","url":"https://a456pur.github.io/seraph/games/dadish/index.html"},{"name":"dadish 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/dadish2.jpg","url":"https://a456pur.github.io/seraph/games/dadish2/index.html"},{"name":"dadish 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/dadish3.jpg","url":"https://a456pur.github.io/seraph/games/dadish3/index.html"},{"name":"snow rider 3d","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/snowrider3d.jpg","url":"https://a456pur.github.io/seraph/games/snowrider3d/index.html"},{"name":"tube jumpers","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/tubejumpers.jpg","url":"https://a456pur.github.io/seraph/games/tubejumpers/index.html"},{"name":"yohoho io","genre":"mobile","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/yohoho.jpg","url":"https://a456pur.github.io/seraph/games/yohoho/index.html"},{"name":"10 minutes till dawn","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/10minutestilldawn.jpg","url":"https://a456pur.github.io/seraph/games/10minutestilldawn/index.html"},{"name":"volley random","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/volleyrandom.jpg","url":"https://a456pur.github.io/seraph/games/volleyrandom/index.html"},{"name":"waterworks","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/waterworks.jpg","url":"https://a456pur.github.io/seraph/games/waterworks/index.html"},{"name":"geometry rash","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/geometryrash.jpg","url":"https://a456pur.github.io/seraph/games/geometryrash/index.html"},{"name":"hole io","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/holeio.jpg","url":"https://a456pur.github.io/seraph/games/holeio/index.html"},{"name":"sandtrix","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sandtrix.jpg","url":"https://a456pur.github.io/seraph/games/sandtrix/index.html"},{"name":"shapeshipper","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shapeshipper.jpg","url":"https://a456pur.github.io/seraph/games/shapeshipper/index.html"},{"name":"slope ball","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/slopeball.jpg","url":"https://a456pur.github.io/seraph/games/slopeball/index.html"},{"name":"stickman golf","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stickmangolf.jpg","url":"https://a456pur.github.io/seraph/games/stickmangolf/index.html"},{"name":"totally accurate battle sim","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/totallyaccuratebattlesim.jpg","url":"https://a456pur.github.io/seraph/games/tabs/index.html"},{"name":"watermelon game","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/watermelongame.jpg","url":"https://a456pur.github.io/seraph/games/watermelongame/index.html"},{"name":"wall smash","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/wallsmash.jpg","url":"https://a456pur.github.io/seraph/games/wallsmash/index.html"},{"name":"crimson fantasia","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/crimsonfantasia.jpg","url":"https://a456pur.github.io/seraph/games/crimsonfantasia/index.html"},{"name":"cut the rope","genre":"mobile","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cuttherope.jpg","url":"https://a456pur.github.io/seraph/games/cuttherope/index.html"},{"name":"funny mad racing","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/funnymadracing.jpg","url":"https://a456pur.github.io/seraph/games/funnymadracing/index.html"},{"name":"geometry dash lite","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/geometrydashlite.jpg","url":"https://a456pur.github.io/seraph/games/gdlite/index.html"},{"name":"grand theft grotto","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/grandtheftgrotto.jpg","url":"https://a456pur.github.io/seraph/games/grandtheftgrotto/index.html"},{"name":"drift mania","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/driftmania.jpg","url":"https://a456pur.github.io/seraph/games/driftmania/index.html"},{"name":"rise higher","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/risehigher.jpg","url":"https://a456pur.github.io/seraph/games/risehigher/index.html"},{"name":"burrito bison","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/burritobison.jpg","url":"https://a456pur.github.io/seraph/games/burritobison/index.html"},{"name":"pool","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pool.jpg","url":"https://a456pur.github.io/seraph/games/pool/index.html"},{"name":"redball","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/redball.jpg","url":"https://a456pur.github.io/seraph/games/redball1/index.html"},{"name":"redball 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/redball3.jpg","url":"https://a456pur.github.io/seraph/games/redball3/index.html"},{"name":"redball 4","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/redball4.jpg","url":"https://a456pur.github.io/seraph/games/redball4/index.html"},{"name":"redball 4 vol 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/redball4vol2.jpg","url":"https://a456pur.github.io/seraph/games/redballv2/index.html"},{"name":"redball 4 vol 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/redball4vol3.jpg","url":"https://a456pur.github.io/seraph/games/redballv3/index.html"},{"name":"rough dino","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/roughdino.jpg","url":"https://a456pur.github.io/seraph/games/roughdino/index.html"},{"name":"time shooter","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/timeshooter.jpg","url":"https://a456pur.github.io/seraph/games/timeshooter1/index.html"},{"name":"time shooter 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/timeshooter2.jpg","url":"https://a456pur.github.io/seraph/games/timeshooter2/index.html"},{"name":"time shooter 3","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/timeshooter3.jpg","url":"https://a456pur.github.io/seraph/games/timeshooter3/index.html"},{"name":"battletoads","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/battletoads.jpg","url":"https://a456pur.github.io/seraph/games/battletoads/index.html"},{"name":"castlevania","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/castlevania.jpg","url":"https://a456pur.github.io/seraph/games/castlevaniaiii/index.html"},{"name":"contra","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/contra.jpg","url":"https://a456pur.github.io/seraph/games/contra/index.html"},{"name":"duck tales","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ducktales.jpg","url":"https://a456pur.github.io/seraph/games/ducktales/index.html"},{"name":"kid icarus","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/kidicarus.jpg","url":"https://a456pur.github.io/seraph/games/kidicarus/index.html"},{"name":"mega man 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/megaman2.jpg","url":"https://a456pur.github.io/seraph/games/megaman2/index.html"},{"name":"ninja gaiden","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ninjagaiden.jpg","url":"https://a456pur.github.io/seraph/games/ninjagaiden/index.html"},{"name":"punch out","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mikestysonspunchout.jpg","url":"https://a456pur.github.io/seraph/games/punchout/index.html"},{"name":"chrono trigger","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/chronotrigger.jpg","url":"https://a456pur.github.io/seraph/games/chronotrigger/index.html"},{"name":"contra iii","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/contraiii.jpg","url":"https://a456pur.github.io/seraph/games/contraiii/index.html"},{"name":"donkey kong country 3","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/donkeykongcountry3.jpg","url":"https://a456pur.github.io/seraph/games/donkeykongcountry3/index.html"},{"name":"earthbound","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/earthbound.jpg","url":"https://a456pur.github.io/seraph/games/earthbound/index.html"},{"name":"final fantasy iv","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/finalfantasyiv.jpg","url":"https://a456pur.github.io/seraph/games/finalfantasyvi/index.html"},{"name":"f-zero","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fzero.jpg","url":"https://a456pur.github.io/seraph/games/fzero/index.html"},{"name":"super metroid","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermetroid.jpg","url":"https://a456pur.github.io/seraph/games/supermetroid/index.html"},{"name":"banjo tooie","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/banjotooie.jpg","url":"https://a456pur.github.io/seraph/games/banjotooie/index.html"},{"name":"harvest moon 64","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/harvestmoon64.jpg","url":"https://a456pur.github.io/seraph/games/harvestmoon64/index.html"},{"name":"jet force gemini","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/jetforcegemini.jpg","url":"https://a456pur.github.io/seraph/games/jetforcegemini/index.html"},{"name":"mystical ninja","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mysticalninja.jpg","url":"https://a456pur.github.io/seraph/games/mysticalninja/index.html"},{"name":"turok dinosaur hunter","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/turokdinosaurhunter.jpg","url":"https://a456pur.github.io/seraph/games/turokdinosaurhunter/index.html"},{"name":"yoshi's story","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/yoshisstory.jpg","url":"https://a456pur.github.io/seraph/games/yoshisstory/index.html"},{"name":"kirby's dreamland 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/kirbysdreamland2.jpg","url":"https://a456pur.github.io/seraph/games/kirbysdreamland2/index.html"},{"name":"link's awakening dx","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/linksawakeningdx.jpg","url":"https://a456pur.github.io/seraph/games/linksawakeningdx/index.html"},{"name":"metroid ii","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/metroidii.jpg","url":"https://a456pur.github.io/seraph/games/metroidii/index.html"},{"name":"super mario land 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supermarioland2.jpg","url":"https://a456pur.github.io/seraph/games/supermarioland2/index.html"},{"name":"wario land ii","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/wariolandii.jpg","url":"https://a456pur.github.io/seraph/games/wariolandii/index.html"},{"name":"castlevania aria of sorrow","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/castlevaniaariaofsorrow.jpg","url":"https://a456pur.github.io/seraph/games/castlevaniaariaofsorrow/index.html"},{"name":"final fantasy tactics adv","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/finalfantasytacticsadventure.jpg","url":"https://a456pur.github.io/seraph/games/finalfantasytacticsadvance/index.html"},{"name":"drill dozer","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/drilldozer.jpg","url":"https://a456pur.github.io/seraph/games/drilldozer/index.html"},{"name":"advance wars days of ruin","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/advancewarsdaysofruin.jpg","url":"https://a456pur.github.io/seraph/games/advancewarsdayofruin/index.html"},{"name":"castlevania dawn of sorrow","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/castlevaniadawnofsorrow.jpg","url":"https://a456pur.github.io/seraph/games/castlevaniadawnofsorrow/index.html"},{"name":"order of ecclesia","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/castlevaniaorderofecclesia.jpg","url":"https://a456pur.github.io/seraph/games/castlevaniaorderofecclesia/index.html"},{"name":"partners in time","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/marioandluigipartnersintime.jpg","url":"https://a456pur.github.io/seraph/games/marioandluigipartnersintime/index.html"},{"name":"comix zone","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/comixzone.jpg","url":"https://a456pur.github.io/seraph/games/comixzone/index.html"},{"name":"ecco the dolphin","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/eccothedolphin.jpg","url":"https://a456pur.github.io/seraph/games/eccothedolphin/index.html"},{"name":"gunstar heroes","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/gunstarheroes.jpg","url":"https://a456pur.github.io/seraph/games/gunstarheroes/index.html"},{"name":"phantasy star iv","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/phantasystariv.jpg","url":"https://a456pur.github.io/seraph/games/phantasystariv/index.html"},{"name":"ranger x","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/rangerx.jpg","url":"https://a456pur.github.io/seraph/games/rangerx/index.html"},{"name":"ristar","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ristar.jpg","url":"https://a456pur.github.io/seraph/games/ristar/index.html"},{"name":"shining force","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shiningforce.jpg","url":"https://a456pur.github.io/seraph/games/shiningforce/index.html"},{"name":"shinobi iii","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shinobiiii.jpg","url":"https://a456pur.github.io/seraph/games/shinobiiii/index.html"},{"name":"sonic the hedgehog","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sonicthehedgehog.jpg","url":"https://a456pur.github.io/seraph/games/sonicthehedgehog/index.html"},{"name":"sonic the hedgehog 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sonicthehedgehog2.jpg","url":"https://a456pur.github.io/seraph/games/sonicthehedgehog2/index.html"},{"name":"streets of rage 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/streetsofrage2.jpg","url":"https://a456pur.github.io/seraph/games/streetsofrage2/index.html"},{"name":"vectorman","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/vectorman.jpg","url":"https://a456pur.github.io/seraph/games/vectorman/index.html"},{"name":"vectorman 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/vectorman2.jpg","url":"https://a456pur.github.io/seraph/games/vectorman2/index.html"},{"name":"illusion of gaia","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/illusionofgaia.jpg","url":"https://a456pur.github.io/seraph/games/illusionofgaia/index.html"},{"name":"pokemon yellow","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pokemonyellow.jpg","url":"https://a456pur.github.io/seraph/games/pokemonyellow/index.html"},{"name":"abuda the alien","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/abudathealien.jpg","url":"https://a456pur.github.io/seraph/games/abudathealien/index.html"},{"name":"battle beavers","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/battlebeavers.jpg","url":"https://a456pur.github.io/seraph/games/battlebeavers/index.html"},{"name":"control craft 2","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/controlcraft2.jpg","url":"https://a456pur.github.io/seraph/games/controlcraft2/index.html"},{"name":"age of war","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ageofwar.jpg","url":"https://a456pur.github.io/seraph/games/ageofwar/index.html"},{"name":"age of war 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ageofwar2.jpg","url":"https://a456pur.github.io/seraph/games/ageofwar2/index.html"},{"name":"amorphous","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/amorphous.jpg","url":"https://a456pur.github.io/seraph/games/amorphous/index.html"},{"name":"bubble spinner","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bubblespinner.jpg","url":"https://a456pur.github.io/seraph/games/bubblespinner/index.html"},{"name":"crush the castle","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/crushthecastle.jpg","url":"https://a456pur.github.io/seraph/games/crushthecastle/index.html"},{"name":"crush the castle 2","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/crushthecastle2.jpg","url":"https://a456pur.github.io/seraph/games/crushthecastle2/index.html"},{"name":"epic battle fantasy","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/epicbattlefantasy.jpg","url":"https://a456pur.github.io/seraph/games/epicbattlefantasy/index.html"},{"name":"epic battle fantasy 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/epicbattlefantasy2.jpg","url":"https://a456pur.github.io/seraph/games/epicbattlefantasy2/index.html"},{"name":"epic battle fantasy 3","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/epicbattlefantasy3.jpg","url":"https://a456pur.github.io/seraph/games/epicbattlefantasy3/index.html"},{"name":"fancy pants adventure 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/fancypantsadventure3.jpg","url":"https://a456pur.github.io/seraph/games/fancypantsadventure3/index.html"},{"name":"flood runner 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/floodrunner2.jpg","url":"https://a456pur.github.io/seraph/games/floodrunner2/index.html"},{"name":"flood runner 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/floodrunner3.jpg","url":"https://a456pur.github.io/seraph/games/floodrunner3/index.html"},{"name":"dragon boy 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/dragonboy2.jpg","url":"https://a456pur.github.io/seraph/games/dragonboy2/index.html"},{"name":"neon rider","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/neonrider.jpg","url":"https://a456pur.github.io/seraph/games/neonrider/index.html"},{"name":"pandemic 2","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pandemic2.jpg","url":"https://a456pur.github.io/seraph/games/pandemic2/index.html"},{"name":"stick war","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stickwar.jpg","url":"https://a456pur.github.io/seraph/games/stickwar/index.html"},{"name":"stick war 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stickwar2.jpg","url":"https://a456pur.github.io/seraph/games/stickwar2/index.html"},{"name":"ultimate flash sonic","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ultimateflashsonic.jpg","url":"https://a456pur.github.io/seraph/games/ultimateflashsonic/index.html"},{"name":"zombocalypse","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/zombocalpyse.jpg","url":"https://a456pur.github.io/seraph/games/zombocalypse/index.html"},{"name":"zombotron","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/zombotron.jpg","url":"https://a456pur.github.io/seraph/games/zombotron/index.html"},{"name":"zombotron 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/zombotron2.jpg","url":"https://a456pur.github.io/seraph/games/zombotron2/index.html"},{"name":"backrooms 2d","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/backrooms2d.jpg","url":"https://a456pur.github.io/seraph/games/backrooms2d/index.html"},{"name":"basket random","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/basketrandom.jpg","url":"https://a456pur.github.io/seraph/games/basketrandom/index.html"},{"name":"csgo clicker","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/csgoclicker.jpg","url":"https://a456pur.github.io/seraph/games/csgoclicker/index.html"},{"name":"doom","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/doom.jpg","url":"https://a456pur.github.io/seraph/games/doom/index.html"},{"name":"funny shooter 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/funnyshooter2.jpg","url":"https://a456pur.github.io/seraph/games/funnyshooter2/index.html"},{"name":"gun fest","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/gunfest.jpg","url":"https://a456pur.github.io/seraph/games/gunfest/index.html"},{"name":"infinite craft","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/infinitecraft.jpg","url":"https://a456pur.github.io/seraph/games/infinitecraft/index.html"},{"name":"lows adventures 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/lowsadventures2.jpg","url":"https://a456pur.github.io/seraph/games/lowsadventures2/index.html"},{"name":"pako highway","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pakohighway.jpg","url":"https://a456pur.github.io/seraph/games/pakohighway/index.html"},{"name":"recoil","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/recoil.jpg","url":"https://a456pur.github.io/seraph/games/recoil/index.html"},{"name":"run 3 plus","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/run3plus.jpg","url":"https://a456pur.github.io/seraph/games/run3plus/index.html"},{"name":"slope city","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/slopecity.jpg","url":"https://a456pur.github.io/seraph/games/slopecity/index.html"},{"name":"state io","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/stateio.jpg","url":"https://a456pur.github.io/seraph/games/stateio/index.html"},{"name":"sudoku","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/sudoku.jpg","url":"https://a456pur.github.io/seraph/games/sudoku/index.html"},{"name":"superhero drop","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/superherodrop.jpg","url":"https://a456pur.github.io/seraph/games/superherodrop/index.html"},{"name":"balloon run","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/balloonrun.jpg","url":"https://a456pur.github.io/seraph/games/balloonrun/index.html"},{"name":"crazy tunnel 3d","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/crazytunnel3d.jpg","url":"https://a456pur.github.io/seraph/games/crazytunnel3d/index.html"},{"name":"minecraft [v1.8]","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mc1.8.jpg","url":"https://a456pur.github.io/seraph/games/eagler1.8/index.html"},{"name":"geometry dash sky","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/geometrydashsky.jpg","url":"https://a456pur.github.io/seraph/games/geometrydashsky/index.html"},{"name":"wubzzys adventure","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/wubzzysamazingadventure.jpg","url":"https://a456pur.github.io/seraph/games/wubzzysamazingadventure/index.html"},{"name":"gold digger frvr","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/golddiggerfrvr.jpg","url":"https://a456pur.github.io/seraph/games/golddiggerfrvr/index.html"},{"name":"hexgl","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/hexgl.jpg","url":"https://a456pur.github.io/seraph/games/hexgl/index.html"},{"name":"house of hazards","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/houseofhazards.jpg","url":"https://a456pur.github.io/seraph/games/houseofhazards/index.html"},{"name":"pick crafter","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/pickcrafter.jpg","url":"https://a456pur.github.io/seraph/games/pickcrafter/index.html"},{"name":"precision client","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/precisionclient.jpg","url":"https://a456pur.github.io/seraph/games/precisionclient/index.html"},{"name":"subway runner","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/subwayrunner.jpg","url":"https://a456pur.github.io/seraph/games/subwayrunner/index.html"},{"name":"xx142-b2.exe","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/xx142b2.exe.jpg","url":"https://a456pur.github.io/seraph/games/xx142-b2.exe/index.html"},{"name":"canopy","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/canopy.jpg","url":"https://a456pur.github.io/seraph/games/canopy/index.html"},{"name":"cave chaos","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cavechaos.jpg","url":"https://a456pur.github.io/seraph/games/cavechaos/index.html"},{"name":"change type","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/changetype.jpg","url":"https://a456pur.github.io/seraph/games/changetype/index.html"},{"name":"cheese dreams","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cheesedreams.jpg","url":"https://a456pur.github.io/seraph/games/cheesedreams/index.html"},{"name":"chisel","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/chisel.jpg","url":"https://a456pur.github.io/seraph/games/chisel/index.html"},{"name":"chisel 2","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/chisel2.jpg","url":"https://a456pur.github.io/seraph/games/chisel2/index.html"},{"name":"ditto","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/ditto.jpg","url":"https://a456pur.github.io/seraph/games/ditto/index.html"},{"name":"feed me","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/feedme.jpg","url":"https://a456pur.github.io/seraph/games/feedme/index.html"},{"name":"final ninja","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/finalninja.jpg","url":"https://a456pur.github.io/seraph/games/finalninja/index.html"},{"name":"frost bite","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/frostbite.jpg","url":"https://a456pur.github.io/seraph/games/frostbite/index.html"},{"name":"frost bite 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/frostbite2.jpg","url":"https://a456pur.github.io/seraph/games/frostbite2/index.html"},{"name":"icebreaker","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/icebreaker.jpg","url":"https://a456pur.github.io/seraph/games/icebreaker/index.html"},{"name":"mutiny","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/mutiny.jpg","url":"https://a456pur.github.io/seraph/games/mutiny/index.html"},{"name":"nitrome must die","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/nitromemustdie.jpg","url":"https://a456pur.github.io/seraph/games/nitromemustdie/index.html"},{"name":"oodlegobs","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/oodlegobs.jpg","url":"https://a456pur.github.io/seraph/games/oodlegobs/index.html"},{"name":"super treadmill","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/supertreadmill.jpg","url":"https://a456pur.github.io/seraph/games/supertreadmill/index.html"},{"name":"swindler","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/swindler.jpg","url":"https://a456pur.github.io/seraph/games/swindler/index.html"},{"name":"test subject arena","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/testsubjectarena.jpg","url":"https://a456pur.github.io/seraph/games/testsubjectarena/index.html"},{"name":"test subject complete","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/testsubjectcomplete.jpg","url":"https://a456pur.github.io/seraph/games/testsubjectcomplete/index.html"},{"name":"twin shot","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/twinshot.jpg","url":"https://a456pur.github.io/seraph/games/twinshot/index.html"},{"name":"twin shot 2","genre":"adventure","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/twinshot2.jpg","url":"https://a456pur.github.io/seraph/games/twinshot2/index.html"},{"name":"three line","genre":"puzzle","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/threeline.jpg","url":"https://a456pur.github.io/seraph/games/3line/index.html"},{"name":"bike champ","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bikechamp.jpg","url":"https://a456pur.github.io/seraph/games/bikechamp/index.html"},{"name":"bike champ 2","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/bikechamp2.jpg","url":"https://a456pur.github.io/seraph/games/bikechamp2/index.html"},{"name":"corporation inc","genre":"arcade","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/corporationinc.jpg","url":"https://a456pur.github.io/seraph/games/corporationinc/index.html"},{"name":"shop empire fable","genre":"simulation","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/shopempirefable.jpg","url":"https://a456pur.github.io/seraph/games/shopempirefable/index.html"},{"name":"cactus mccoy","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cactusmccoy.jpg","url":"https://a456pur.github.io/seraph/games/cactusmccoy/index.html"},{"name":"cactus mccoy 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/cactusmccoy2.jpg","url":"https://a456pur.github.io/seraph/games/cactusmccoy2/index.html"},{"name":"papa louie","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papalouie.jpg","url":"https://a456pur.github.io/seraph/games/papalouie/index.html"},{"name":"papa louie 2","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papalouie2.jpg","url":"https://a456pur.github.io/seraph/games/papalouie2/index.html"},{"name":"papa louie 3","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/papalouie3.jpg","url":"https://a456pur.github.io/seraph/games/papalouie3/index.html"},{"name":"steak and jake","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/steakandjake.jpg","url":"https://a456pur.github.io/seraph/games/steakandjake/index.html"},{"name":"steak and jake midnight","genre":"platformer","thumb":"https://raw.githubusercontent.com/a456pur/seraph/main/images/thumbnails/steakandjakemidnightmarch.jpg","url":"https://a456pur.github.io/seraph/games/steakandjakemidnightmarch/index.html"}];
+
+let activeGame=null;
+
+function renderPlayView(va){
+  const node=document.getElementById('tmplPlay').content.cloneNode(true);
+  va.appendChild(node);
+  document.getElementById('zonesSearch').addEventListener('input',filterGames);
+  document.getElementById('zonesGenre').addEventListener('change',filterGames);
+  renderGameGrid(SERAPH_GAMES);
+}
+
+function filterGames(){
+  const q=(document.getElementById('zonesSearch')?.value||'').toLowerCase().trim();
+  const genre=document.getElementById('zonesGenre')?.value||'all';
+  let list=[...SERAPH_GAMES];
+  if(genre!=='all')list=list.filter(g=>g.genre===genre);
+  if(q)list=list.filter(g=>g.name.toLowerCase().includes(q));
+  renderGameGrid(list);
+}
+
+function renderGameGrid(list){
+  const grid=document.getElementById('zoneGrid');
+  const cnt=document.getElementById('zonesCount');
+  if(!grid)return;
+  if(cnt)cnt.textContent=list.length+' games';
+  grid.innerHTML='';
+  // Batch render for smoothness (501 cards)
+  let idx=0;
+  function batch(){
+    list.slice(idx,idx+60).forEach(g=>{
+      const card=document.createElement('div');
+      card.className='zone-card';
+      card.innerHTML=`<img class="zone-thumb" src="${esc(g.thumb)}" alt="${esc(g.name)}" loading="lazy" onerror="this.parentElement.querySelector('.zone-thumb').style.display='none'"><div class="zone-name">${esc(g.name)}</div>`;
+      card.onclick=()=>openGame(g);
+      grid.appendChild(card);
+    });
+    idx+=60;
+    if(idx<list.length)requestAnimationFrame(batch);
+  }
+  requestAnimationFrame(batch);
+}
+
+function openGame(g){
+  activeGame=g;
+  const viewer=document.getElementById('zoneViewer');
+  if(!viewer)return;
+  document.getElementById('zvName').textContent=g.name;
+  document.getElementById('zvGenre').textContent=g.genre;
+  viewer.classList.add('open');
+  // Seraph games are full standalone pages on GitHub Pages — direct src load
+  document.getElementById('zoneIframe').src=g.url;
+}
+
+function closeZoneViewer(){
+  const v=document.getElementById('zoneViewer');
+  if(v)v.classList.remove('open');
+  const f=document.getElementById('zoneIframe');
+  if(f)f.src='about:blank';
+  activeGame=null;
+}
+function zvNewTab(){
+  if(activeGame)window.open(activeGame.url,'_blank','noopener');
+}
+function zvFullscreen(){
+  const f=document.getElementById('zoneIframe');
+  if(f&&f.requestFullscreen)f.requestFullscreen().catch(()=>{});
+}
+
+
+/* ═══ TOOLBAR WIRING ═══ */
+document.getElementById('addrInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){const d=resolveUrl(this.value);if(d)navigateTo(d);}
+});
+document.getElementById('newTabBtn2').addEventListener('click',()=>newTab());
+document.getElementById('fullBtn').addEventListener('click',()=>{
+  if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
+});
+
+/* ═══ BOOT ═══ */
+newTab();
+</script>
+
+<script>
+(function () {
+  // Wire up the DDG site-search form whenever the home view is rendered into the DOM.
+  // We use a MutationObserver so it catches the form even after dynamic template injection.
+  const observer = new MutationObserver(function () {
+    const form  = document.getElementById('ddg-site-search');
+    const input = document.getElementById('ddg-query');
+    if (form && input && !form.dataset.wired) {
+      form.dataset.wired = '1';
+      form.addEventListener('submit', function () {
+        const domain = window.location.hostname;
+        // Only prepend site: when we're actually on a real domain (not localhost / file://)
+        if (domain && domain !== 'localhost' && !domain.startsWith('127.')) {
+          input.value = 'site:' + domain + ' ' + input.value;
+        }
+      });
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+</body>
 </html>
