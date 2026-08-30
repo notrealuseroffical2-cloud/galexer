@@ -709,26 +709,13 @@ function looksUrl(s){
   return /^[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?(\/[^\s]*)?$/i.test(s)&&!s.includes(' ');
 }
 function resolveUrl(raw){
-  const q = raw.trim();
-  if(!q) return null;
-
+  const q=raw.trim();if(!q)return null;
   if(looksUrl(q)){
-    const url = /^https?:\/\//i.test(q) ? q : 'https://' + q;
-    let lbl;
-    try { lbl = new URL(url).hostname.replace(/^www\./,''); }
-    catch(e) { lbl = q; }
-    return { url, title: lbl };
+    const url=/^https?:\/\//i.test(q)?q:'https://'+q;
+    let lbl;try{lbl=new URL(url).hostname.replace(/^www\./,'');}catch(e){lbl=q;}
+    return{url,title:lbl};
   }
-
-  // Use your Cloudflare Worker proxy instead of DuckDuckGo directly
-  return { 
-    url: 'https://ddg-proxy.notrealuseroffical2.workers.dev/?q=' + encodeURIComponent(q),
-    title: q
-  };
-}
-;
-  }
-  return{url:'https://ddg-proxy.notrealuseroffical2.workers.dev/?q='+encodeURIComponent(q),title:q};
+  return{url:'https://Google.com/?q='+encodeURIComponent(q),title:q};
 }
 function newTab(dest){
   const tab={id:seq++,title:dest?dest.title:'New Tab',url:dest?dest.url:null,panel:'home'};
