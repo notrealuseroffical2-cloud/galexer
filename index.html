@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -715,7 +716,8 @@ function resolveUrl(raw){
     let lbl;try{lbl=new URL(url).hostname.replace(/^www\./,'');}catch(e){lbl=q;}
     return{url,title:lbl};
   }
-  return{url:'https://duckduckgo.com/?q='+encodeURIComponent(q),title:q};
+  return { url:'https://galexer-proxy.workers.dev/?q='+encodeURIComponent(q), title:q };
+
 }
 function newTab(dest){
   const tab={id:seq++,title:dest?dest.title:'New Tab',url:dest?dest.url:null,panel:'home'};
