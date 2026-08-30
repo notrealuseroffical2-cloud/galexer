@@ -601,8 +601,8 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
         <button class="zone-action" onclick="closeZoneViewer()">← Back</button>
         <span class="zone-top-title" id="zvName"></span>
         <span class="zone-top-sub" id="zvGenre"></span>
-        <button class="zone-action" onclick="zvNewTab()">New Tab</button>
-        <button class="zone-action primary" onclick="zvFullscreen()">Fullscreen</button>
+        <button class="zone-action" onclick="zvNewTab()" title="Open game in about:blank tab">A:B</button>
+        <button class="zone-action primary" onclick="zvFullscreen()" title="Fullscreen the game frame">⛶ Fullscreen</button>
       </div>
       <iframe class="zone-iframe" id="zoneIframe" allow="fullscreen; autoplay; pointer-lock"></iframe>
     </div>
@@ -899,30 +899,98 @@ function renderGameGrid(list){
   requestAnimationFrame(batch);
 }
 
+// Register SW to strip X-Frame-Options/CORS headers from Seraph game pages
+// Requires sw.js to be in the same folder as galexer.html
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+function writeHtmlToFrame(iframe, html){
+  if(!iframe.contentDocument){
+    const ni=document.createElement('iframe');
+    ni.id=iframe.id;ni.className=iframe.className;
+    ni.setAttribute('allow','fullscreen; autoplay; pointer-lock');
+    iframe.replaceWith(ni);iframe=ni;
+  }
+  const base=activeGame?activeGame.url.replace(/\/[^/]*$/,'/'):'';
+  if(base&&!html.includes('<base ')){
+    html=html.includes('<head>')?html.replace('<head>',`<head><base href="${base}">`):`<base href="${base}">${html}`;
+  }
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+  return iframe;
+}
+
+function loadGameIntoFrame(iframe, url, onErr){
+  // When SW is active it intercepts this fetch and strips blocking headers
+  fetch(url,{credentials:'omit'})
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
+    .then(html=>{writeHtmlToFrame(iframe,html);})
+    .catch(()=>{
+      // SW not yet active (first load) — fall back to direct src
+      // SW will intercept and strip X-Frame-Options on subsequent loads
+      iframe.src=url;
+    });
+  return iframe;
+}
+
 function openGame(g){
-  activeGame=g;
-  const viewer=document.getElementById('zoneViewer');
-  if(!viewer)return;
-  document.getElementById('zvName').textContent=g.name;
-  document.getElementById('zvGenre').textContent=g.genre;
+  activeGame = g;
+  const viewer = document.getElementById('zoneViewer');
+  if (!viewer) return;
+  document.getElementById('zvName').textContent = g.name;
+  document.getElementById('zvGenre').textContent = g.genre;
   viewer.classList.add('open');
-  // Seraph games are full standalone pages on GitHub Pages — direct src load
-  document.getElementById('zoneIframe').src=g.url;
+  const iframe = document.getElementById('zoneIframe');
+  loadGameIntoFrame(iframe, g.url, err => {
+    // Show error inside the frame itself
+    if (iframe.contentDocument) {
+      iframe.contentDocument.open();
+      iframe.contentDocument.write(`<!DOCTYPE html><html><body style="margin:0;background:#111;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px">
+        <h2 style="margin:0">⚠ Couldn't load game</h2>
+        <p style="color:#aaa;margin:0">${err.message}</p>
+      </body></html>`);
+      iframe.contentDocument.close();
+    }
+  });
 }
 
 function closeZoneViewer(){
-  const v=document.getElementById('zoneViewer');
-  if(v)v.classList.remove('open');
-  const f=document.getElementById('zoneIframe');
-  if(f)f.src='about:blank';
-  activeGame=null;
+  const v = document.getElementById('zoneViewer');
+  if (v) v.classList.remove('open');
+  const f = document.getElementById('zoneIframe');
+  if (f && f.contentDocument) {
+    f.contentDocument.open();
+    f.contentDocument.write('');
+    f.contentDocument.close();
+  }
+  activeGame = null;
 }
+
 function zvNewTab(){
-  if(activeGame)window.open(activeGame.url,'_blank','noopener');
+  if(!activeGame) return;
+  const w=window.open('about:blank','_blank','noopener');
+  if(!w) return;
+  fetch(activeGame.url,{credentials:'omit'})
+    .then(r=>r.text())
+    .then(html=>{
+      const base=activeGame.url.replace(/\/[^/]*$/,'/');
+      if(!html.includes('<base ')){
+        html=html.includes('<head>')?html.replace('<head>',`<head><base href="${base}">`):`<base href="${base}">${html}`;
+      }
+      w.document.open();w.document.write(html);w.document.close();
+    })
+    .catch(()=>{w.location.href=activeGame.url;});
 }
+
 function zvFullscreen(){
-  const f=document.getElementById('zoneIframe');
-  if(f&&f.requestFullscreen)f.requestFullscreen().catch(()=>{});
+  // Fullscreen the iframe element itself — game stays embedded, nothing opens externally
+  const f = document.getElementById('zoneIframe');
+  if (!f) return;
+  (f.requestFullscreen || f.webkitRequestFullscreen || f.mozRequestFullScreen || f.msRequestFullscreen)
+    ?.call(f)
+    ?.catch(() => {});
 }
 
 
