@@ -2,7 +2,7 @@ name: Deploy Galexer to GitHub Pages
 
 on:
   push:
-    branches: ["main", "feature/scramjet-integration"]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -24,7 +24,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - name: Install dependencies
         run: npm install
       - name: Build site
