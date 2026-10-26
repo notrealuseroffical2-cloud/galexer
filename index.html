@@ -770,7 +770,12 @@ function renderView(){
     renderPlayView(va);
     return;
   }
-  if(panel==='proxy'){\n    bk.disabled=true;fw.disabled=true;\n    galxRenderProxyPanel(va);\n    return;\n  }\n  if(['ai','chat','listen','watch','apps'].includes(panel)){
+  if(panel==='proxy'){
+    bk.disabled=true;fw.disabled=true;
+    galxRenderProxyPanel(va);
+    return;
+  }
+  if(['ai','chat','listen','watch','apps'].includes(panel)){
     bk.disabled=true;fw.disabled=true;
     renderGenericPanel(va,tab);
     return;
