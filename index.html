@@ -900,7 +900,7 @@ function renderGameGrid(list){
 // Register SW to strip X-Frame-Options/CORS headers from Seraph game pages
 // Requires sw.js to be in the same folder as galexer.html
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw-v2.js').catch(()=>{});
+  navigator.serviceWorker.register('./sw-v2.js?v=20261026-2',{updateViaCache:'none'}).catch(()=>{});
 }
 
 function writeHtmlToFrame(iframe, html){
@@ -1032,12 +1032,12 @@ async function galxInitScramjet(){
     galxScramjet = new ($scramjetLoadController().ScramjetController)({files:{wasm:galxAsset("scram/scramjet.wasm.wasm"),all:galxAsset("scram/scramjet.all.js"),sync:galxAsset("scram/scramjet.sync.js")}});
     await galxScramjet.init();
     stage="registering service worker";
-    await navigator.serviceWorker.register(galxAsset("sw-v2.js"),{scope:GALX_BASE});
+    await navigator.serviceWorker.register(galxAsset("sw-v2.js")+"?v=20261026-2",{scope:GALX_BASE,updateViaCache:"none"});
     await navigator.serviceWorker.ready;
     const wisp=galxWispUrl();
     if(!wisp) throw new Error("Wisp backend not configured. Deploy backend/ on a Node host, then set GALEXER_WISP_URL in proxy-config.js.");
     stage="initializing BareMux storage and transport";
-    galxBareConnection = new BareMux.BareMuxConnection(galxAsset("baremux/worker.js"));
+    galxBareConnection = new BareMux.BareMuxConnection(galxAsset("baremux/worker.js")+"?v=20261026-2");
     await galxBareConnection.setTransport(galxAsset("libcurl/index.mjs"),[{websocket:wisp}]);
     galxScramjetReady=true;
   }catch(err){
