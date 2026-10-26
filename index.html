@@ -1032,7 +1032,7 @@ async function galxInitScramjet(){
     galxScramjet = new ($scramjetLoadController().ScramjetController)({files:{wasm:galxAsset("scram/scramjet.wasm.wasm"),all:galxAsset("scram/scramjet.all.js"),sync:galxAsset("scram/scramjet.sync.js")}});
     await galxScramjet.init();
     stage="registering service worker";
-    await navigator.serviceWorker.register(galexAsset("sw-v2.js"),{scope:GALX_BASE});
+    await navigator.serviceWorker.register(galxAsset("sw-v2.js"),{scope:GALX_BASE});
     await navigator.serviceWorker.ready;
     const wisp=galxWispUrl();
     if(!wisp) throw new Error("Wisp backend not configured. Deploy backend/ on a Node host, then set GALEXER_WISP_URL in proxy-config.js.");
