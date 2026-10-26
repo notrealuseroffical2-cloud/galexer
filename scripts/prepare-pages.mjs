@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const site = path.join(root, "site");
 await rm(site, { recursive: true, force: true });
 await mkdir(site, { recursive: true });
-for (const file of ["index.html", "sw.js", "proxy-config.js"]) {
+for (const file of ["index.html", "sw.js", "sw-v2.js", "proxy-config.js"]) {
   await cp(path.join(root, file), path.join(site, file));
 }
 for (const [source, target] of [
