@@ -900,7 +900,7 @@ function renderGameGrid(list){
 // Register SW to strip X-Frame-Options/CORS headers from Seraph game pages
 // Requires sw.js to be in the same folder as galexer.html
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  navigator.serviceWorker.register('./sw-v2.js').catch(()=>{});
 }
 
 function writeHtmlToFrame(iframe, html){
@@ -1028,7 +1028,7 @@ async function galxInitScramjet(){
   if(typeof $scramjetLoadController !== "function" || typeof BareMux === "undefined") throw new Error("Scramjet assets did not load. Wait for the GitHub Pages build and reload.");
   galxScramjet = new ($scramjetLoadController().ScramjetController)({files:{wasm:galxAsset("scram/scramjet.wasm.wasm"),all:galxAsset("scram/scramjet.all.js"),sync:galxAsset("scram/scramjet.sync.js")}});
   await galxScramjet.init();
-  await navigator.serviceWorker.register(galxAsset("sw.js"),{scope:GALX_BASE});
+  await navigator.serviceWorker.register(galxAsset("sw-v2.js"),{scope:GALX_BASE});
   await navigator.serviceWorker.ready;
   const wisp=galxWispUrl();
   if(!wisp) throw new Error("Wisp backend not configured. Deploy backend/ on a Node host, then set GALEXER_WISP_URL in proxy-config.js.");
