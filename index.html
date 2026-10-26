@@ -410,6 +410,10 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
         <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="8" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
         <span class="nav-label">Play</span>
       </div>
+      <div class="nav-item" data-panel="proxy" title="Scramjet Proxy" onclick="showPanel('proxy',this)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+        <span class="nav-label">Proxy</span>
+      </div>
       <div class="nav-item" data-panel="apps" title="Apps" onclick="showPanel('apps',this)">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         <span class="nav-label">Apps</span>
@@ -766,7 +770,7 @@ function renderView(){
     renderPlayView(va);
     return;
   }
-  if(['ai','chat','listen','watch','apps'].includes(panel)){
+  if(panel==='proxy'){\n    bk.disabled=true;fw.disabled=true;\n    galxRenderProxyPanel(va);\n    return;\n  }\n  if(['ai','chat','listen','watch','apps'].includes(panel)){
     bk.disabled=true;fw.disabled=true;
     renderGenericPanel(va,tab);
     return;
@@ -802,19 +806,8 @@ function renderHomeView(va){
 function renderExtFrame(va,tab){
   const wrap=document.createElement('div');
   wrap.className='view';wrap.style.overflow='hidden';
-  const iframe=document.createElement('iframe');
-  iframe.src=tab.url;
-  iframe.setAttribute('referrerpolicy','no-referrer');
-  iframe.style.cssText='width:100%;height:100%;border:none;display:block;';
-  wrap.appendChild(iframe);
-  const note=document.createElement('div');
-  note.className='ext-frame-note';
-  note.innerHTML=`<span>Some sites block iframes. If this looks blank, open it directly.</span><button onclick="window.open('${esc(tab.url)}','_blank','noopener')">Open directly ↗</button><button onclick="this.parentElement.style.display='none'">✕</button>`;
-  wrap.appendChild(note);
   va.appendChild(wrap);
-  document.getElementById('reloadBtn').onclick=()=>{iframe.src=tab.url;};
-  document.getElementById('backBtn').onclick=()=>{try{iframe.contentWindow.history.back();}catch(e){}};
-  document.getElementById('fwdBtn').onclick=()=>{try{iframe.contentWindow.history.forward();}catch(e){}};
+  galxOpenProxy(tab.url,wrap);
 }
 
 /* ─── generic panels ─── */
@@ -1007,6 +1000,79 @@ document.getElementById('fullBtn').addEventListener('click',()=>{
 /* ═══ BOOT ═══ */
 newTab();
 </script>
+
+
+<script src="./proxy-config.js"></script>
+<script src="./scram/scramjet.all.js"></script>
+<script src="./baremux/index.js"></script>
+<script>
+/* Galexer Scramjet integration. Backend is configured in proxy-config.js. */
+const GALX_BASE = new URL(".", location.href).pathname;
+let galxScramjet = null;
+let galxBareConnection = null;
+let galxScramjetReady = false;
+let galxScramjetError = "";
+function galxAsset(path){ return GALX_BASE.replace(/\/$/,"/") + path.replace(/^\//,""); }
+function galxWispUrl(){
+  const configured = String(window.GALEXER_WISP_URL || "").trim().replace(/\/$/,"");
+  if(!configured) return "";
+  return configured.endsWith("/wisp") ? configured + "/" : configured + "/wisp/";
+}
+async function galxInitScramjet(){
+  if(galxScramjetReady) return;
+  if(typeof $scramjetLoadController !== "function" || typeof BareMux === "undefined") throw new Error("Scramjet assets did not load. Wait for the GitHub Pages build and reload.");
+  galxScramjet = new ($scramjetLoadController().ScramjetController)({files:{wasm:galxAsset("scram/scramjet.wasm.wasm"),all:galxAsset("scram/scramjet.all.js"),sync:galxAsset("scram/scramjet.sync.js")}});
+  await galxScramjet.init();
+  await navigator.serviceWorker.register(galxAsset("sw.js"),{scope:GALX_BASE});
+  await navigator.serviceWorker.ready;
+  const wisp=galxWispUrl();
+  if(!wisp) throw new Error("Wisp backend not configured. Deploy backend/ on a Node host, then set GALEXER_WISP_URL in proxy-config.js.");
+  galxBareConnection = new BareMux.BareMuxConnection(galxAsset("baremux/worker.js"));
+  await galxBareConnection.setTransport(galxAsset("libcurl/index.mjs"),[{websocket:wisp}]);
+  galxScramjetReady=true;
+}
+async function galxOpenProxy(url, wrap){
+  wrap.innerHTML='<div class="sj-status"><div class="sj-status-card"><div class="sj-spinner"></div><h2>Starting Scramjet…</h2><p>Connecting to Galexer proxy transport.</p></div></div>';
+  try{
+    await galxInitScramjet();
+    wrap.innerHTML="";
+    const frame=galxScramjet.createFrame();
+    frame.frame.style.cssText="width:100%;height:100%;border:0;display:block;background:#fff;";
+    frame.frame.setAttribute("allow","fullscreen; autoplay; clipboard-read; clipboard-write");
+    wrap.appendChild(frame.frame);
+    frame.go(url);
+    document.getElementById("reloadBtn").onclick=()=>frame.go(url);
+    document.getElementById("backBtn").onclick=()=>{try{frame.frame.contentWindow.history.back()}catch(e){}};
+    document.getElementById("fwdBtn").onclick=()=>{try{frame.frame.contentWindow.history.forward()}catch(e){}};
+  }catch(err){
+    galxScramjetError=err.message||String(err);
+    wrap.innerHTML='<div class="sj-status"><div class="sj-status-card"><div class="sj-kicker">GALEXER / SCRAMJET</div><h2>Proxy setup needed</h2><p class="sj-status-detail"></p><p>GitHub Pages serves the interface, but the Wisp WebSocket transport must run on a separate Node host.</p><button class="panel-launch" id="sjRetry">Retry connection</button><a class="sj-doc-link" href="https://github.com/notrealuseroffical2-cloud/galexer/tree/feature/scramjet-integration/backend" target="_blank" rel="noopener">Backend files ↗</a></div></div>';
+    wrap.querySelector(".sj-status-detail").textContent=galxScramjetError;
+    wrap.querySelector("#sjRetry").onclick=()=>galxOpenProxy(url,wrap);
+  }
+}
+function galxRenderProxyPanel(va){
+  const wrap=document.createElement("div");wrap.className="view";
+  wrap.innerHTML='<div class="sj-status"><div class="sj-status-card"><div class="sj-kicker">GALEXER / SCRAMJET</div><h2>Browse through Scramjet</h2><p>Enter a website or search term in Galexer’s address bar, or start here.</p><form id="sjStartForm" class="sj-form"><input id="sjStartInput" placeholder="https://example.com or search the web" autocomplete="url"><button class="panel-launch" type="submit">Browse ↗</button></form><p class="sj-small">Requires the separately hosted Wisp transport. Configure it in <code>proxy-config.js</code> after deploying <code>backend/</code>.</p></div></div>';
+  va.appendChild(wrap);
+  wrap.querySelector("#sjStartForm").addEventListener("submit",e=>{e.preventDefault();const d=resolveUrl(wrap.querySelector("#sjStartInput").value);if(d)navigateTo(d);});
+}
+</script>
+<style>
+.sj-status{height:100%;min-height:300px;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:radial-gradient(ellipse at 50% 25%,rgba(168,85,247,.12),transparent 55%);}
+.sj-status-card{width:min(640px,100%);padding:30px;border:1px solid var(--border-2);border-radius:18px;background:rgba(20,18,23,.94);box-shadow:0 20px 70px rgba(0,0,0,.28);}
+.sj-status-card h2{font-size:25px;margin:12px 0;color:var(--text);}
+.sj-status-card p{line-height:1.7;color:var(--muted);margin:10px 0;}
+.sj-kicker{color:var(--primary);font-size:11px;font-weight:700;letter-spacing:.16em;}
+.sj-form{display:flex;gap:10px;margin:20px 0;}
+.sj-form input{flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--border-2);border-radius:10px;padding:13px 14px;font:inherit;}
+.sj-small{font-size:12px!important;}
+.sj-doc-link{display:inline-block;color:var(--primary);margin-top:12px;}
+.sj-status-card code{color:#d8b4fe;}
+.sj-spinner{width:24px;height:24px;border:2px solid var(--border-2);border-top-color:var(--primary);border-radius:50%;animation:sjspin .8s linear infinite;}
+@keyframes sjspin{to{transform:rotate(360deg)}}
+@media(max-width:560px){.sj-form{flex-direction:column}.sj-status-card{padding:20px}}
+</style>
 
 <script>
 (function () {
