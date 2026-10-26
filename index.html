@@ -1025,16 +1025,25 @@ function galxWispUrl(){
 }
 async function galxInitScramjet(){
   if(galxScramjetReady) return;
-  if(typeof $scramjetLoadController !== "function" || typeof BareMux === "undefined") throw new Error("Scramjet assets did not load. Wait for the GitHub Pages build and reload.");
-  galxScramjet = new ($scramjetLoadController().ScramjetController)({files:{wasm:galxAsset("scram/scramjet.wasm.wasm"),all:galxAsset("scram/scramjet.all.js"),sync:galxAsset("scram/scramjet.sync.js")}});
-  await galxScramjet.init();
-  await navigator.serviceWorker.register(galxAsset("sw-v2.js"),{scope:GALX_BASE});
-  await navigator.serviceWorker.ready;
-  const wisp=galxWispUrl();
-  if(!wisp) throw new Error("Wisp backend not configured. Deploy backend/ on a Node host, then set GALEXER_WISP_URL in proxy-config.js.");
-  galxBareConnection = new BareMux.BareMuxConnection(galxAsset("baremux/worker.js"));
-  await galxBareConnection.setTransport(galxAsset("libcurl/index.mjs"),[{websocket:wisp}]);
-  galxScramjetReady=true;
+  let stage="checking runtime assets";
+  try{
+    if(typeof $scramjetLoadController !== "function" || typeof BareMux === "undefined") throw new Error("Scramjet/BareMux assets did not load. Wait for the GitHub Pages build and reload.");
+    stage="initializing Scramjet";
+    galxScramjet = new ($scramjetLoadController().ScramjetController)({files:{wasm:galxAsset("scram/scramjet.wasm.wasm"),all:galxAsset("scram/scramjet.all.js"),sync:galxAsset("scram/scramjet.sync.js")}});
+    await galxScramjet.init();
+    stage="registering service worker";
+    await navigator.serviceWorker.register(galexAsset("sw-v2.js"),{scope:GALX_BASE});
+    await navigator.serviceWorker.ready;
+    const wisp=galxWispUrl();
+    if(!wisp) throw new Error("Wisp backend not configured. Deploy backend/ on a Node host, then set GALEXER_WISP_URL in proxy-config.js.");
+    stage="initializing BareMux storage and transport";
+    galxBareConnection = new BareMux.BareMuxConnection(galxAsset("baremux/worker.js"));
+    await galxBareConnection.setTransport(galxAsset("libcurl/index.mjs"),[{websocket:wisp}]);
+    galxScramjetReady=true;
+  }catch(err){
+    const detail=err && err.message ? err.message : String(err);
+    throw new Error("Failed while "+stage+": "+detail);
+  }
 }
 async function galxOpenProxy(url, wrap){
   wrap.innerHTML='<div class="sj-status"><div class="sj-status-card"><div class="sj-spinner"></div><h2>Starting Scramjet…</h2><p>Connecting to Galexer proxy transport.</p></div></div>';
