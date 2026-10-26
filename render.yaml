@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: galexer-scramjet-wisp
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    plan: starter
